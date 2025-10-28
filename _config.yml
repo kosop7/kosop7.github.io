@@ -1,15 +1,13 @@
 # Site settings
-title: Your site
+title: kosop 
 description: >
-    Your description
-author: Your name
-email: your@e.mail
+    이것 저것 하고 있습니다. 사진•영상•영화•음악•비평 등
+author: 고윤지
+email: 12149km@gmail.com
 baseurl: "" # the subpath of your site, e.g. /blog
-url: "https://yourname.github.io" # the base hostname & protocol for your site
-twitter_username: YourTwitter
-github_username:  YourGitHub
+url: "https://kosop7.github.io" # the base hostname & protocol for your site
 
-disqus_shortname: YourDisqusShortname
+disqus_shortname: kosop-blog
 
 # Build settings
 include: [_pages]
