@@ -1,7 +1,8 @@
 <footer class="c-page__footer">
-  <p class="fortune-title"> 5초마다 농담이 바뀝니다.</p>
+  <p class="fortune-title">10초마다 농담이 바뀝니다.</p>
   <p id="fortune-text" class="fortune-text"></p>
 
+  {% raw %}
   <script>
     window.onload = function() {
       const fortunes = [
@@ -12,19 +13,30 @@
         "소련 식당의 웨이트리스가 말한다. '오늘은 커피가 없습니다. 우유가 없는 커피는 어제였어요.'",
         "어느 교수와 학생이 대화 중이다. 교수: '나는 진리를 추구한다.' 학생: '그럼 진리는 무엇인가요?' 교수: '진리는 내가 추구하는 것입니다.'",
         "환자가 정신과 의사에게 말한다. '선생님, 저는 모든 것을 의심합니다.' 의사가 대답한다. '그럼 당신은 나를 의심합니까?' 환자가 말한다. '물론입니다.' 의사가 말한다. '그럼 당신은 의심하지 않는 것이 아닙니까?'",
-        "교수가 학생에게 말한다. '당신은 철학을 이해하지 못합니다.' 학생이 대답한다. '그럼 철학이란 무엇입니까?' 교수: '철학은 당신이 이해하지 못하는 것입니다.'"
+        "교수가 학생에게 말한다. '당신은 철학을 이해하지 못합니다.' 학생이 대답한다. '그럼 철학이란 무엇입니까?' 교수: '철학은 당신이 이해하지 못하는 것입니다.'",
         "자지 말어라 roll your penis."
       ];
 
       const textElement = document.getElementById("fortune-text");
 
       function showRandomFortune() {
-        const index = Math.floor(Math.random() * fortunes.length);
-        textElement.innerText = fortunes[index];
+        // 페이드 아웃
+        textElement.style.opacity = 0;
+
+        setTimeout(() => {
+          const index = Math.floor(Math.random() * fortunes.length);
+          textElement.innerText = fortunes[index];
+          // 페이드 인
+          textElement.style.opacity = 1;
+        }, 800); // 0.8초 후 내용 교체
       }
 
+      // 초기 표시
       showRandomFortune();
-      setInterval(showRandomFortune, 5000);
+
+      // 10초마다 교체
+      setInterval(showRandomFortune, 10000);
     };
   </script>
+  {% endraw %}
 </footer>
