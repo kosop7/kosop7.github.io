@@ -234,3 +234,13 @@
         }
     }
 }
+
+.c-page__footer {
+  background-image: url('https://kosop7.github.io/assets/images/rollyourpenis.jpg');
+  background-size: cover;        /* 화면에 꽉 채우기 */
+  background-position: center;   /* 가운데 정렬 */
+  background-repeat: no-repeat;  /* 반복 방지 */
+  color: #fff;                   /* 글씨 흰색 */
+  padding: 40px 20px;            /* 여유 공간 */
+}
+
