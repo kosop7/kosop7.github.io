@@ -1,6 +1,7 @@
 # Site settings
-title: kosop 
-description: >kosop
+title: kosop
+description: >
+  kosop
     
 author: 고윤지
 email: 12149km@gmail.com
@@ -14,12 +15,12 @@ include: [_pages]
 markdown: kramdown
 permalink: /:year/:month/:title
 sass:
-    style: compressed
+  style: compressed
 
 gems:
   - jemoji
   - jekyll-sitemap
-# - amp-jekyll # Acceletrated Mobile Pages
+# - amp-jekyll # Accelerated Mobile Pages
 
 # AMP Settings
 # ampdir: amp/
@@ -27,3 +28,4 @@ gems:
 
 # Google Analytics
 # google_analytics: UA-XXXXXXXX-X
+
