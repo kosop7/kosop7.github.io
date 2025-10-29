@@ -1,8 +1,8 @@
 <footer class="c-page__footer">
   <!-- 안내 문구 -->
-  <p class="fortune-title">새로고침시 농담이 하나씩 올라옵니다.</p>
+  <p class="fortune-title">5초마다 지젝 농담이 바뀝니다.</p>
 
-  <!-- 랜덤 농담 -->
+  <!-- 랜덤 농담 표시 영역 -->
   <p id="fortune-text" class="fortune-text"></p>
 
   <script>
@@ -17,10 +17,17 @@
       "교수가 학생에게 말한다. '당신은 철학을 이해하지 못합니다.' 학생이 대답한다. '그럼 철학이란 무엇입니까?' 교수: '철학은 당신이 이해하지 못하는 것입니다.'"
     ];
 
-    // 랜덤 인덱스 선택
-    const index = Math.floor(Math.random() * fortunes.length);
+    const textElement = document.getElementById("fortune-text");
 
-    // 결과 표시
-    document.getElementById("fortune-text").innerText = fortunes[index];
+    function showRandomFortune() {
+      const index = Math.floor(Math.random() * fortunes.length);
+      textElement.innerText = fortunes[index];
+    }
+
+    // 초기 표시
+    showRandomFortune();
+
+    // 5초마다 교체
+    setInterval(showRandomFortune, 5000);
   </script>
 </footer>
