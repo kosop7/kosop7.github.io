@@ -8,7 +8,7 @@ email: 12149km@gmail.com
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://kosop7.github.io" # the base hostname & protocol for your site
 
-disqus_shortname: kosop-blog
+#disqus_shortname: kosop-blog
 
 # Build settings
 include: [_pages]
