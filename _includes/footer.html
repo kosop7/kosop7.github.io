@@ -1,35 +1,40 @@
 <footer class="c-page__footer">
-  <p class="fortune-title">농담</p>
-  <p id="fortune-text" class="fortune-text"></p>
+  <div class="footer-fortune">
+    <p class="fortune-left">
+      바르샤바에 있는 레닌에 대한 유명한 농담이 있다. 모스크바에서 열린 한 미술 전시회에
+      레닌의 부인이 공산당 청년동맹의 단원과 침대에 함께 있는 그림이 전시되었다.
+      그 그림의 표제는 바르샤바에 있는 레닌이었다.
+      한 당황한 관광객이 가이드에게 그런데 레닌은 어디에 있는 거죠라고 물었다.
+      가이드는 근엄한 표정을 지으며 레닌은 바르샤바에 있습니다라고 대답했다고 한다.
+    </p>
 
-  {% raw %}
-  <script>
-    window.onload = function() {
-      const fortunes = [
-        “바르샤바에 있는 레닌”에 대한 유명한 농담이 있다. 모스크바에서 열린 한 미술 전시회에 레닌의 부인이 공산당 청년동맹의 단원과 침대에 함께 있는 그림이 전시 되었다. 그 그림의 표제가 “바르샤바에 있는 레닌”이었다. 한 당황한 관광객이 가이드에게 “그런데 레닌은 어디에 있는 거죠?”라고 물었다. 가이드는 근엄한 표정을 지으며 “레닌은 바르샤바에 있습니다.”라고 대답했다고 한다.
-    ];
-      const textElement = document.getElementById("fortune-text");
-
-      function showRandomFortune() {
-        // 페이드 아웃
-        textElement.style.opacity = 0;
-
-        setTimeout(() => {
-          const index = Math.floor(Math.random() * fortunes.length);
-          textElement.innerText = fortunes[index];
-          // 페이드 인
-          textElement.style.opacity = 1;
-        }, 800); // 0.8초 후 내용 교체
-      }
-
-      // 초기 표시
-      showRandomFortune();
-
-      // 10초마다 교체
-      setInterval(showRandomFortune, 10000);
-    };
-  </script>
-  {% endraw %}
+    <p class="fortune-right">
+      고윤지 쓰고 만듦
+    </p>
+  </div>
 </footer>
 
-고윤지 쓰고 만듦
+<style>
+.footer-fortune {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 20px;
+  font-size: 14px; /* 양쪽 텍스트 크기 동일 */
+  line-height: 1.6;
+  color: #333;
+}
+
+.fortune-left {
+  flex: 1;
+}
+
+.fortune-right {
+  white-space: nowrap;
+  opacity: 0.7;
+}
+</style>
+
