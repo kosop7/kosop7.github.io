@@ -1,0 +1,20 @@
+---
+layout: page
+title: Posts
+permalink: /posts/
+---
+
+<section class="c-archives">
+  <ul class="c-archives__list">
+    {% for post in site.posts %}
+      <li class="c-archives__item">
+        <h3>
+          <a href="{{ post.url | prepend: site.baseurl }}">
+            {{ post.title }}
+          </a>
+        </h3>
+        <p>{{ post.date | date: "%Y-%m-%d" }}</p>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
