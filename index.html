@@ -17,11 +17,10 @@ html, body {
   font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
 }
 
-/* ===== GAME ===== */
+/* GAME */
 .game-wrap {
   width: 100%;
   padding: 48px 0 64px;
-  position: relative;
 }
 
 canvas {
@@ -52,7 +51,7 @@ canvas {
   text-align: center;
 }
 
-/* ===== START BUTTON ===== */
+/* START */
 #startBtn {
   display: block;
   margin: 16px auto 0;
@@ -64,7 +63,7 @@ canvas {
   cursor: pointer;
 }
 
-/* ===== POSTS ===== */
+/* POSTS */
 .c-archives {
   max-width: 720px;
   margin: 80px auto;
@@ -84,7 +83,6 @@ canvas {
       <small>START 버튼으로 재시작</small>
     </div>
   </div>
-
   <button id="startBtn">START</button>
 </section>
 
@@ -137,7 +135,7 @@ let score = 0;
 const bird = {
   x: 100,
   y: canvas.height / DPR / 2,
-  r: 10,
+  r: 14,
   vy: 0,
   rot: 0
 };
@@ -150,27 +148,19 @@ const scoreEl = document.getElementById('score');
 const overEl = document.getElementById('over');
 const startBtn = document.getElementById('startBtn');
 
-/* ===== INPUT (등록/해제) ===== */
+/* ===== INPUT ===== */
 function enableInput() {
   window.addEventListener('keydown', onKey);
   canvas.addEventListener('mousedown', flap);
   canvas.addEventListener('touchstart', onTouch, { passive: false });
 }
-
 function disableInput() {
   window.removeEventListener('keydown', onKey);
   canvas.removeEventListener('mousedown', flap);
   canvas.removeEventListener('touchstart', onTouch);
 }
-
-function onKey(e) {
-  if (e.code === 'Space') flap();
-}
-
-function onTouch(e) {
-  e.preventDefault();
-  flap();
-}
+function onKey(e) { if (e.code === 'Space') flap(); }
+function onTouch(e) { e.preventDefault(); flap(); }
 
 /* ===== GAME ===== */
 function flap() {
@@ -198,7 +188,7 @@ startBtn.onclick = () => {
 };
 
 /* ===== UTILS ===== */
-const rand = (a,b) => Math.random()*(b-a)+a;
+const rand = (a,b)=>Math.random()*(b-a)+a;
 
 function addPipe() {
   pipes.push({
@@ -223,10 +213,34 @@ function drawBird() {
   ctx.save();
   ctx.translate(bird.x, bird.y);
   ctx.rotate(bird.rot);
+
+  /* body */
   ctx.fillStyle = '#ffdf3a';
   ctx.beginPath();
-  ctx.arc(0,0,14,0,Math.PI*2);
+  ctx.arc(0, 0, bird.r, 0, Math.PI * 2);
   ctx.fill();
+
+  /* eye */
+  ctx.fillStyle = '#222';
+  ctx.beginPath();
+  ctx.arc(-4, -4, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* eye shine */
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(-3, -5, 1, 0, Math.PI * 2);
+  ctx.fill();
+
+  /* beak */
+  ctx.fillStyle = '#ff9f1a';
+  ctx.beginPath();
+  ctx.moveTo(bird.r - 2, 0);
+  ctx.lineTo(bird.r + 8, -4);
+  ctx.lineTo(bird.r + 8, 4);
+  ctx.closePath();
+  ctx.fill();
+
   ctx.restore();
 }
 
