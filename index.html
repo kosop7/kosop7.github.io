@@ -2,282 +2,103 @@
 layout: page
 title: Home
 ---
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>Clumsy Bird (No Build)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clumsy Bird</title>
+
   <style>
+    /* ===== 기본 페이지 ===== */
     html, body {
       margin: 0;
       padding: 0;
-      background: #87ceeb;
-      height: 100%;
+      background: #ffffff;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      user-select: none;
-      overflow: hidden;
     }
+
+    /* ===== 게임 영역 ===== */
+    .game-wrap {
+      background: #87ceeb;
+      padding: 40px 0 60px;
+    }
+
+    .game-inner {
+      position: relative;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
     #game {
       display: block;
       margin: 0 auto;
       background: linear-gradient(#87ceeb, #bfe9ff);
+      border-radius: 12px;
     }
+
     .ui {
-      position: fixed;
+      position: absolute;
       left: 50%;
       transform: translateX(-50%);
       color: #fff;
-      text-shadow: 0 2px 4px rgba(0,0,0,.35);
       font-weight: 800;
+      text-shadow: 0 2px 4px rgba(0,0,0,.35);
       pointer-events: none;
     }
+
     #score {
-      top: 16px;
+      top: 14px;
       font-size: 36px;
     }
+
     #hint {
       bottom: 18%;
-      font-size: 18px;
+      font-size: 16px;
       opacity: .9;
     }
+
     #over {
-      top: 35%;
+      top: 38%;
       font-size: 28px;
       display: none;
       text-align: center;
     }
+
     #over small {
       display: block;
       margin-top: 10px;
-      font-size: 16px;
+      font-size: 15px;
       opacity: .9;
+    }
+
+    /* ===== 포스트 영역 ===== */
+    .c-archives {
+      max-width: 720px;
+      margin: 80px auto;
+      padding: 0 20px;
     }
   </style>
 </head>
+
 <body>
-  <canvas id="game"></canvas>
-  <div id="score" class="ui">0</div>
-  <div id="hint" class="ui">탭 / 클릭 / 스페이스</div>
-  <div id="over" class="ui">
-    GAME OVER
-    <small>다시 시작: 탭 / 클릭 / 스페이스</small>
+
+<!-- ================= GAME ================= -->
+<section class="game-wrap">
+  <div class="game-inner">
+    <canvas id="game"></canvas>
+    <div id="score" class="ui">0</div>
+    <div id="hint" class="ui">탭 / 클릭 / 스페이스</div>
+    <div id="over" class="ui">
+      GAME OVER
+      <small>다시 시작: 탭 / 클릭 / 스페이스</small>
+    </div>
   </div>
+</section>
 
-  <script>
-    // ====== Canvas setup ======
-    const canvas = document.getElementById('game');
-    const ctx = canvas.getContext('2d');
-    const DPR = Math.min(window.devicePixelRatio || 1, 2);
-
-    function resize() {
-      const w = Math.min(window.innerWidth, 420);
-      const h = Math.min(window.innerHeight, 720);
-      canvas.style.width = w + 'px';
-      canvas.style.height = h + 'px';
-      canvas.width = Math.floor(w * DPR);
-      canvas.height = Math.floor(h * DPR);
-      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    // ====== Game constants ======
-    const GRAVITY = 0.55;
-    const FLAP = -9.5;
-    const PIPE_GAP = 150;
-    const PIPE_W = 60;
-    const PIPE_SPEED = 2.6;
-    const GROUND_H = 90;
-
-    // ====== State ======
-    let running = false;
-    let gameOver = false;
-    let score = 0;
-
-    const bird = {
-      x: 90,
-      y: canvas.height / DPR / 2,
-      r: 14,
-      vy: 0,
-      rot: 0
-    };
-
-    let pipes = [];
-    let spawnTimer = 0;
-
-    // ====== UI ======
-    const scoreEl = document.getElementById('score');
-    const hintEl = document.getElementById('hint');
-    const overEl = document.getElementById('over');
-
-    // ====== Input ======
-    function flap() {
-      if (!running) {
-        reset();
-        running = true;
-        hintEl.style.display = 'none';
-        return;
-      }
-      if (gameOver) {
-        reset();
-        return;
-      }
-      bird.vy = FLAP;
-    }
-    window.addEventListener('keydown', e => {
-      if (e.code === 'Space') flap();
-    });
-    window.addEventListener('mousedown', flap);
-    window.addEventListener('touchstart', e => {
-      e.preventDefault();
-      flap();
-    }, { passive: false });
-
-    // ====== Helpers ======
-    function rand(min, max) {
-      return Math.random() * (max - min) + min;
-    }
-
-    function reset() {
-      gameOver = false;
-      running = true;
-      score = 0;
-      scoreEl.textContent = score;
-      overEl.style.display = 'none';
-      bird.y = canvas.height / DPR / 2;
-      bird.vy = 0;
-      bird.rot = 0;
-      pipes = [];
-      spawnTimer = 0;
-    }
-
-    function addPipe() {
-      const h = canvas.height / DPR;
-      const gapY = rand(120, h - GROUND_H - 120);
-      pipes.push({
-        x: canvas.width / DPR + 20,
-        gapY,
-        passed: false
-      });
-    }
-
-    function collidePipe(p) {
-      const bx = bird.x, by = bird.y, r = bird.r;
-      const topH = p.gapY - PIPE_GAP / 2;
-      const botY = p.gapY + PIPE_GAP / 2;
-
-      // AABB vs circle (simple)
-      if (bx + r > p.x && bx - r < p.x + PIPE_W) {
-        if (by - r < topH || by + r > botY) return true;
-      }
-      return false;
-    }
-
-    // ====== Draw ======
-    function drawBird() {
-      ctx.save();
-      ctx.translate(bird.x, bird.y);
-      ctx.rotate(bird.rot);
-      ctx.fillStyle = '#ffdf3a';
-      ctx.beginPath();
-      ctx.arc(0, 0, bird.r, 0, Math.PI * 2);
-      ctx.fill();
-
-      // beak
-      ctx.fillStyle = '#ff9f1a';
-      ctx.beginPath();
-      ctx.moveTo(bird.r, 0);
-      ctx.lineTo(bird.r + 8, -4);
-      ctx.lineTo(bird.r + 8, 4);
-      ctx.closePath();
-      ctx.fill();
-
-      // eye
-      ctx.fillStyle = '#222';
-      ctx.beginPath();
-      ctx.arc(-4, -4, 2.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.restore();
-    }
-
-    function drawPipes() {
-      ctx.fillStyle = '#2ecc71';
-      pipes.forEach(p => {
-        const topH = p.gapY - PIPE_GAP / 2;
-        const botY = p.gapY + PIPE_GAP / 2;
-        ctx.fillRect(p.x, 0, PIPE_W, topH);
-        ctx.fillRect(p.x, botY, PIPE_W, canvas.height / DPR - botY - GROUND_H);
-      });
-    }
-
-    function drawGround() {
-      const h = canvas.height / DPR;
-      ctx.fillStyle = '#8e6e53';
-      ctx.fillRect(0, h - GROUND_H, canvas.width / DPR, GROUND_H);
-    }
-
-    // ====== Update ======
-    function update() {
-      if (!running || gameOver) return;
-
-      bird.vy += GRAVITY;
-      bird.y += bird.vy;
-      bird.rot = Math.max(-0.4, Math.min(1.2, bird.vy / 12));
-
-      // bounds
-      const h = canvas.height / DPR;
-      if (bird.y - bird.r < 0 || bird.y + bird.r > h - GROUND_H) {
-        gameOver = true;
-      }
-
-      spawnTimer++;
-      if (spawnTimer > 95) {
-        addPipe();
-        spawnTimer = 0;
-      }
-
-      pipes.forEach(p => {
-        p.x -= PIPE_SPEED;
-
-        if (!p.passed && p.x + PIPE_W < bird.x) {
-          p.passed = true;
-          score++;
-          scoreEl.textContent = score;
-        }
-
-        if (collidePipe(p)) gameOver = true;
-      });
-
-      pipes = pipes.filter(p => p.x + PIPE_W > -20);
-
-      if (gameOver) {
-        overEl.style.display = 'block';
-        running = false;
-      }
-    }
-
-    // ====== Loop ======
-    function loop() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      drawPipes();
-      drawGround();
-      drawBird();
-
-      update();
-      requestAnimationFrame(loop);
-    }
-
-    loop();
-  </script>
-</body>
-</html>
-
-
-<!-- 2️⃣ POSTS SECTION -->
-<section class="c-archives" style="margin-bottom:80px;">
+<!-- ================= POSTS ================= -->
+<section class="c-archives">
   <ul class="c-archives__list">
     {% for post in site.posts %}
       <li class="c-archives__item">
@@ -291,4 +112,202 @@ title: Home
   </ul>
 </section>
 
+<script>
+/* ===== Canvas setup ===== */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
+const GAME_WIDTH = 420;
+const GAME_HEIGHT = 640;
+
+function resize() {
+  canvas.style.width = GAME_WIDTH + 'px';
+  canvas.style.height = GAME_HEIGHT + 'px';
+  canvas.width = Math.floor(GAME_WIDTH * DPR);
+  canvas.height = Math.floor(GAME_HEIGHT * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+resize();
+
+/* ===== 게임 상수 (느리게 조정됨) ===== */
+const GRAVITY = 0.45;
+const FLAP = -8.5;
+const PIPE_GAP = 160;
+const PIPE_W = 60;
+const PIPE_SPEED = 1.9;
+const GROUND_H = 90;
+
+/* ===== 상태 ===== */
+let running = false;
+let gameOver = false;
+let score = 0;
+
+const bird = {
+  x: 90,
+  y: GAME_HEIGHT / 2,
+  r: 14,
+  vy: 0,
+  rot: 0
+};
+
+let pipes = [];
+let spawnTimer = 0;
+
+/* ===== UI ===== */
+const scoreEl = document.getElementById('score');
+const hintEl = document.getElementById('hint');
+const overEl = document.getElementById('over');
+
+/* ===== 입력 ===== */
+function flap() {
+  if (!running) {
+    reset();
+    running = true;
+    hintEl.style.display = 'none';
+    return;
+  }
+  if (gameOver) {
+    reset();
+    return;
+  }
+  bird.vy = FLAP;
+}
+
+window.addEventListener('keydown', e => {
+  if (e.code === 'Space') flap();
+});
+window.addEventListener('mousedown', flap);
+window.addEventListener('touchstart', e => {
+  e.preventDefault();
+  flap();
+}, { passive: false });
+
+/* ===== 유틸 ===== */
+function rand(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
+function reset() {
+  gameOver = false;
+  running = true;
+  score = 0;
+  scoreEl.textContent = score;
+  overEl.style.display = 'none';
+  bird.y = GAME_HEIGHT / 2;
+  bird.vy = 0;
+  pipes = [];
+  spawnTimer = 0;
+}
+
+function addPipe() {
+  const gapY = rand(140, GAME_HEIGHT - GROUND_H - 140);
+  pipes.push({ x: GAME_WIDTH + 20, gapY, passed: false });
+}
+
+function collidePipe(p) {
+  const bx = bird.x, by = bird.y, r = bird.r;
+  const topH = p.gapY - PIPE_GAP / 2;
+  const botY = p.gapY + PIPE_GAP / 2;
+
+  if (bx + r > p.x && bx - r < p.x + PIPE_W) {
+    if (by - r < topH || by + r > botY) return true;
+  }
+  return false;
+}
+
+/* ===== 그리기 ===== */
+function drawBird() {
+  ctx.save();
+  ctx.translate(bird.x, bird.y);
+  ctx.rotate(bird.rot);
+
+  ctx.fillStyle = '#ffdf3a';
+  ctx.beginPath();
+  ctx.arc(0, 0, bird.r, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#ff9f1a';
+  ctx.beginPath();
+  ctx.moveTo(bird.r, 0);
+  ctx.lineTo(bird.r + 8, -4);
+  ctx.lineTo(bird.r + 8, 4);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#222';
+  ctx.beginPath();
+  ctx.arc(-4, -4, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawPipes() {
+  ctx.fillStyle = '#2ecc71';
+  pipes.forEach(p => {
+    const topH = p.gapY - PIPE_GAP / 2;
+    const botY = p.gapY + PIPE_GAP / 2;
+    ctx.fillRect(p.x, 0, PIPE_W, topH);
+    ctx.fillRect(p.x, botY, PIPE_W, GAME_HEIGHT - botY - GROUND_H);
+  });
+}
+
+function drawGround() {
+  ctx.fillStyle = '#8e6e53';
+  ctx.fillRect(0, GAME_HEIGHT - GROUND_H, GAME_WIDTH, GROUND_H);
+}
+
+/* ===== 업데이트 ===== */
+function update() {
+  if (!running || gameOver) return;
+
+  bird.vy += GRAVITY;
+  bird.y += bird.vy;
+  bird.rot = Math.max(-0.4, Math.min(1.2, bird.vy / 12));
+
+  if (bird.y - bird.r < 0 || bird.y + bird.r > GAME_HEIGHT - GROUND_H) {
+    gameOver = true;
+  }
+
+  spawnTimer++;
+  if (spawnTimer > 120) {
+    addPipe();
+    spawnTimer = 0;
+  }
+
+  pipes.forEach(p => {
+    p.x -= PIPE_SPEED;
+
+    if (!p.passed && p.x + PIPE_W < bird.x) {
+      p.passed = true;
+      score++;
+      scoreEl.textContent = score;
+    }
+
+    if (collidePipe(p)) gameOver = true;
+  });
+
+  pipes = pipes.filter(p => p.x + PIPE_W > -20);
+
+  if (gameOver) {
+    overEl.style.display = 'block';
+    running = false;
+  }
+}
+
+/* ===== 루프 ===== */
+function loop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawPipes();
+  drawGround();
+  drawBird();
+  update();
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+
+</body>
+</html>
