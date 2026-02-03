@@ -18,9 +18,10 @@ title: Home
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     }
 
+    /* ===== 게임 영역 ===== */
     .game-wrap {
-      background: #87ceeb;
       padding: 40px 0 60px;
+      background: #ffffff;
     }
 
     .game-inner {
@@ -32,17 +33,17 @@ title: Home
     #game {
       display: block;
       margin: 0 auto;
-      background: linear-gradient(#87ceeb, #bfe9ff);
+      background: #ffffff;
       border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.08);
     }
 
     .ui {
       position: absolute;
       left: 50%;
       transform: translateX(-50%);
-      color: #fff;
+      color: #222;
       font-weight: 800;
-      text-shadow: 0 2px 4px rgba(0,0,0,.35);
       pointer-events: none;
     }
 
@@ -53,13 +54,13 @@ title: Home
 
     #hint {
       bottom: 18%;
-      font-size: 16px;
-      opacity: .9;
+      font-size: 15px;
+      opacity: .6;
     }
 
     #over {
       top: 38%;
-      font-size: 28px;
+      font-size: 26px;
       display: none;
       text-align: center;
     }
@@ -67,10 +68,11 @@ title: Home
     #over small {
       display: block;
       margin-top: 10px;
-      font-size: 15px;
-      opacity: .9;
+      font-size: 14px;
+      opacity: .6;
     }
 
+    /* ===== 포스트 ===== */
     .c-archives {
       max-width: 720px;
       margin: 80px auto;
@@ -127,7 +129,7 @@ function resize() {
 }
 resize();
 
-/* ===== 난이도 (관대함) ===== */
+/* ===== 난이도 (관대함 유지) ===== */
 const GRAVITY = 0.45;
 const FLAP = -8.5;
 const PIPE_GAP = 160;
@@ -140,11 +142,10 @@ let running = false;
 let gameOver = false;
 let score = 0;
 
-/* 🔥 히트박스 축소 */
 const bird = {
   x: 90,
   y: GAME_HEIGHT / 2,
-  r: 10,       // ← 실제 그림보다 작음
+  r: 10,
   vy: 0,
   rot: 0
 };
@@ -202,10 +203,10 @@ function addPipe() {
   });
 }
 
-/* 🔥 관대한 충돌 판정 */
+/* ===== 관대한 충돌 ===== */
 function collidePipe(p) {
   const r = bird.r;
-  const margin = 6; // ← 여유 버퍼
+  const margin = 6;
   const topH = p.gapY - PIPE_GAP / 2;
   const botY = p.gapY + PIPE_GAP / 2;
 
@@ -227,7 +228,7 @@ function drawBird() {
 
   ctx.fillStyle = '#ffdf3a';
   ctx.beginPath();
-  ctx.arc(0, 0, 14, 0, Math.PI * 2); // 그림은 그대로
+  ctx.arc(0, 0, 14, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.fillStyle = '#ff9f1a';
@@ -257,7 +258,7 @@ function drawPipes() {
 }
 
 function drawGround() {
-  ctx.fillStyle = '#8e6e53';
+  ctx.fillStyle = '#dddddd';
   ctx.fillRect(0, GAME_HEIGHT - GROUND_H, GAME_WIDTH, GROUND_H);
 }
 
