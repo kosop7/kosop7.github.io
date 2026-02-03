@@ -11,7 +11,6 @@ title: Home
   <title>Clumsy Bird</title>
 
   <style>
-    /* ===== 기본 페이지 ===== */
     html, body {
       margin: 0;
       padding: 0;
@@ -19,7 +18,6 @@ title: Home
       font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     }
 
-    /* ===== 게임 영역 ===== */
     .game-wrap {
       background: #87ceeb;
       padding: 40px 0 60px;
@@ -73,7 +71,6 @@ title: Home
       opacity: .9;
     }
 
-    /* ===== 포스트 영역 ===== */
     .c-archives {
       max-width: 720px;
       margin: 80px auto;
@@ -84,7 +81,7 @@ title: Home
 
 <body>
 
-<!-- ================= GAME ================= -->
+<!-- GAME -->
 <section class="game-wrap">
   <div class="game-inner">
     <canvas id="game"></canvas>
@@ -97,7 +94,7 @@ title: Home
   </div>
 </section>
 
-<!-- ================= POSTS ================= -->
+<!-- POSTS -->
 <section class="c-archives">
   <ul class="c-archives__list">
     {% for post in site.posts %}
@@ -113,7 +110,7 @@ title: Home
 </section>
 
 <script>
-/* ===== Canvas setup ===== */
+/* ===== Canvas ===== */
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
@@ -124,13 +121,13 @@ const GAME_HEIGHT = 640;
 function resize() {
   canvas.style.width = GAME_WIDTH + 'px';
   canvas.style.height = GAME_HEIGHT + 'px';
-  canvas.width = Math.floor(GAME_WIDTH * DPR);
-  canvas.height = Math.floor(GAME_HEIGHT * DPR);
+  canvas.width = GAME_WIDTH * DPR;
+  canvas.height = GAME_HEIGHT * DPR;
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 }
 resize();
 
-/* ===== 게임 상수 (느리게 조정됨) ===== */
+/* ===== 난이도 (관대함) ===== */
 const GRAVITY = 0.45;
 const FLAP = -8.5;
 const PIPE_GAP = 160;
@@ -143,10 +140,11 @@ let running = false;
 let gameOver = false;
 let score = 0;
 
+/* 🔥 히트박스 축소 */
 const bird = {
   x: 90,
   y: GAME_HEIGHT / 2,
-  r: 14,
+  r: 10,       // ← 실제 그림보다 작음
   vy: 0,
   rot: 0
 };
@@ -174,9 +172,7 @@ function flap() {
   bird.vy = FLAP;
 }
 
-window.addEventListener('keydown', e => {
-  if (e.code === 'Space') flap();
-});
+window.addEventListener('keydown', e => e.code === 'Space' && flap());
 window.addEventListener('mousedown', flap);
 window.addEventListener('touchstart', e => {
   e.preventDefault();
@@ -184,9 +180,7 @@ window.addEventListener('touchstart', e => {
 }, { passive: false });
 
 /* ===== 유틸 ===== */
-function rand(min, max) {
-  return Math.random() * (max - min) + min;
-}
+const rand = (a, b) => Math.random() * (b - a) + a;
 
 function reset() {
   gameOver = false;
@@ -201,17 +195,26 @@ function reset() {
 }
 
 function addPipe() {
-  const gapY = rand(140, GAME_HEIGHT - GROUND_H - 140);
-  pipes.push({ x: GAME_WIDTH + 20, gapY, passed: false });
+  pipes.push({
+    x: GAME_WIDTH + 20,
+    gapY: rand(150, GAME_HEIGHT - GROUND_H - 150),
+    passed: false
+  });
 }
 
+/* 🔥 관대한 충돌 판정 */
 function collidePipe(p) {
-  const bx = bird.x, by = bird.y, r = bird.r;
+  const r = bird.r;
+  const margin = 6; // ← 여유 버퍼
   const topH = p.gapY - PIPE_GAP / 2;
   const botY = p.gapY + PIPE_GAP / 2;
 
-  if (bx + r > p.x && bx - r < p.x + PIPE_W) {
-    if (by - r < topH || by + r > botY) return true;
+  if (bird.x + r > p.x + margin &&
+      bird.x - r < p.x + PIPE_W - margin) {
+    if (bird.y - r < topH + margin ||
+        bird.y + r > botY - margin) {
+      return true;
+    }
   }
   return false;
 }
@@ -224,14 +227,14 @@ function drawBird() {
 
   ctx.fillStyle = '#ffdf3a';
   ctx.beginPath();
-  ctx.arc(0, 0, bird.r, 0, Math.PI * 2);
+  ctx.arc(0, 0, 14, 0, Math.PI * 2); // 그림은 그대로
   ctx.fill();
 
   ctx.fillStyle = '#ff9f1a';
   ctx.beginPath();
-  ctx.moveTo(bird.r, 0);
-  ctx.lineTo(bird.r + 8, -4);
-  ctx.lineTo(bird.r + 8, 4);
+  ctx.moveTo(14, 0);
+  ctx.lineTo(22, -4);
+  ctx.lineTo(22, 4);
   ctx.closePath();
   ctx.fill();
 
@@ -266,7 +269,7 @@ function update() {
   bird.y += bird.vy;
   bird.rot = Math.max(-0.4, Math.min(1.2, bird.vy / 12));
 
-  if (bird.y - bird.r < 0 || bird.y + bird.r > GAME_HEIGHT - GROUND_H) {
+  if (bird.y < 6 || bird.y > GAME_HEIGHT - GROUND_H - 6) {
     gameOver = true;
   }
 
@@ -305,7 +308,6 @@ function loop() {
   update();
   requestAnimationFrame(loop);
 }
-
 loop();
 </script>
 
