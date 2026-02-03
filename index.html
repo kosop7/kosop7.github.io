@@ -6,87 +6,290 @@ title: Home
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Clumsy Bird</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #ffffff;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-    }
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #ffffff;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
 
-    /* ===== 게임 영역 (페이지 일부처럼) ===== */
-    .game-wrap {
-      width: 100%;
-      padding: 40px 0 60px;
-    }
+/* ===== GAME ===== */
+.game-wrap {
+  width: 100%;
+  padding: 48px 0 64px;
+  position: relative;
+}
 
-    canvas {
-      display: block;
-      margin: 0 auto;
-      background: transparent; /* 박스 느낌 제거 */
-    }
+canvas {
+  display: block;
+  margin: 0 auto;
+  background: transparent;
+}
 
-    .ui {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      color: #222;
-      font-weight: 800;
-      pointer-events: none;
-    }
+.ui {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #111;
+  font-weight: 700;
+  pointer-events: none;
+}
 
-    #score {
-      top: 14px;
-      font-size: 34px;
-    }
+#score {
+  top: 12px;
+  font-size: 32px;
+  display: none;
+}
 
-    #hint {
-      bottom: 18%;
-      font-size: 14px;
-      opacity: .6;
-    }
+#over {
+  top: 40%;
+  font-size: 24px;
+  display: none;
+  text-align: center;
+}
 
-    #over {
-      top: 38%;
-      font-size: 26px;
-      display: none;
-      text-align: center;
-    }
+/* ===== START BUTTON ===== */
+#startBtn {
+  display: block;
+  margin: 16px auto 0;
+  padding: 8px 16px;
+  background: #000;
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+}
 
-    #over small {
-      display: block;
-      margin-top: 10px;
-      font-size: 14px;
-      opacity: .6;
-    }
-
-    /* ===== 포스트 ===== */
-    .c-archives {
-      max-width: 720px;
-      margin: 80px auto;
-      padding: 0 20px;
-    }
-  </style>
+/* ===== POSTS ===== */
+.c-archives {
+  max-width: 720px;
+  margin: 80px auto;
+  padding: 0 20px;
+}
+</style>
 </head>
 
 <body>
 
-<!-- GAME -->
 <section class="game-wrap">
   <div style="position:relative;">
     <canvas id="game"></canvas>
     <div id="score" class="ui">0</div>
-    <div id="hint" class="ui">탭 / 클릭 / 스페이스</div>
     <div id="over" class="ui">
-      GAME OVER
-      <small>다시 시작: 탭 / 클릭 / 스페이스</small>
+      GAME OVER<br>
+      <small>START 버튼으로 재시작</small>
     </div>
   </div>
+
+  <button id="startBtn">START</button>
 </section>
 
-<!-- POSTS -->
-<section class="c-arc
+<section class="c-archives">
+  <ul class="c-archives__list">
+    {% for post in site.posts %}
+      <li class="c-archives__item">
+        <h3>
+          <a href="{{ post.url | prepend: site.baseurl }}">
+            {{ post.title }}
+          </a>
+        </h3>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+
+<script>
+/* ===== Canvas ===== */
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+function resize() {
+  const w = Math.min(window.innerWidth, 520);
+  const h = Math.min(window.innerHeight * 0.85, 680);
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  canvas.width = w * DPR;
+  canvas.height = h * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+/* ===== GAME CONST ===== */
+const GRAVITY = 0.45;
+const FLAP = -8.5;
+const PIPE_GAP = 160;
+const PIPE_W = 60;
+const PIPE_SPEED = 1.9;
+const GROUND_H = 90;
+
+/* ===== STATE ===== */
+let active = false;
+let running = false;
+let gameOver = false;
+let score = 0;
+
+const bird = {
+  x: 100,
+  y: canvas.height / DPR / 2,
+  r: 10,
+  vy: 0,
+  rot: 0
+};
+
+let pipes = [];
+let spawnTimer = 0;
+
+/* ===== UI ===== */
+const scoreEl = document.getElementById('score');
+const overEl = document.getElementById('over');
+const startBtn = document.getElementById('startBtn');
+
+/* ===== INPUT (등록/해제) ===== */
+function enableInput() {
+  window.addEventListener('keydown', onKey);
+  canvas.addEventListener('mousedown', flap);
+  canvas.addEventListener('touchstart', onTouch, { passive: false });
+}
+
+function disableInput() {
+  window.removeEventListener('keydown', onKey);
+  canvas.removeEventListener('mousedown', flap);
+  canvas.removeEventListener('touchstart', onTouch);
+}
+
+function onKey(e) {
+  if (e.code === 'Space') flap();
+}
+
+function onTouch(e) {
+  e.preventDefault();
+  flap();
+}
+
+/* ===== GAME ===== */
+function flap() {
+  if (!running) return;
+  bird.vy = FLAP;
+}
+
+function reset() {
+  gameOver = false;
+  running = true;
+  score = 0;
+  scoreEl.textContent = score;
+  scoreEl.style.display = 'block';
+  overEl.style.display = 'none';
+  bird.y = canvas.height / DPR / 2;
+  bird.vy = 0;
+  pipes = [];
+  spawnTimer = 0;
+}
+
+startBtn.onclick = () => {
+  active = true;
+  reset();
+  enableInput();
+};
+
+/* ===== UTILS ===== */
+const rand = (a,b) => Math.random()*(b-a)+a;
+
+function addPipe() {
+  pipes.push({
+    x: canvas.width / DPR + 40,
+    gapY: rand(140, canvas.height / DPR - GROUND_H - 140),
+    passed: false
+  });
+}
+
+function collide(p) {
+  const m = 6;
+  const top = p.gapY - PIPE_GAP/2;
+  const bot = p.gapY + PIPE_GAP/2;
+  if (bird.x + bird.r > p.x + m && bird.x - bird.r < p.x + PIPE_W - m) {
+    if (bird.y - bird.r < top + m || bird.y + bird.r > bot - m) return true;
+  }
+  return false;
+}
+
+/* ===== DRAW ===== */
+function drawBird() {
+  ctx.save();
+  ctx.translate(bird.x, bird.y);
+  ctx.rotate(bird.rot);
+  ctx.fillStyle = '#ffdf3a';
+  ctx.beginPath();
+  ctx.arc(0,0,14,0,Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawPipes() {
+  ctx.fillStyle = '#2ecc71';
+  pipes.forEach(p=>{
+    const t = p.gapY - PIPE_GAP/2;
+    const b = p.gapY + PIPE_GAP/2;
+    ctx.fillRect(p.x,0,PIPE_W,t);
+    ctx.fillRect(p.x,b,PIPE_W,canvas.height/DPR-b-GROUND_H);
+  });
+}
+
+function drawGround() {
+  ctx.fillStyle = '#eee';
+  ctx.fillRect(0,canvas.height/DPR-GROUND_H,canvas.width/DPR,GROUND_H);
+}
+
+/* ===== LOOP ===== */
+function update() {
+  if (!running) return;
+
+  bird.vy += GRAVITY;
+  bird.y += bird.vy;
+  bird.rot = Math.max(-0.4, Math.min(1.2, bird.vy/12));
+
+  if (bird.y < 4 || bird.y > canvas.height/DPR-GROUND_H-4) gameOver = true;
+
+  spawnTimer++;
+  if (spawnTimer > 120) {
+    addPipe();
+    spawnTimer = 0;
+  }
+
+  pipes.forEach(p=>{
+    p.x -= PIPE_SPEED;
+    if (!p.passed && p.x + PIPE_W < bird.x) {
+      p.passed = true;
+      score++;
+      scoreEl.textContent = score;
+    }
+    if (collide(p)) gameOver = true;
+  });
+
+  pipes = pipes.filter(p=>p.x+PIPE_W>-20);
+
+  if (gameOver) {
+    running = false;
+    overEl.style.display = 'block';
+    disableInput();
+  }
+}
+
+function loop() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawPipes();
+  drawGround();
+  drawBird();
+  if (active) update();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+
+</body>
+</html>
