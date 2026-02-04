@@ -2,15 +2,34 @@
 layout: page
 title: Home
 ---
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>대한민국 새 도감</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #ffffff;
+  font-family: "Noto Serif KR", serif;
+  height: 100%;
+}
+
+/* 중앙 고정 */
 #book-stage {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 80px 0;
 }
 
+/* 책 */
 #book {
   width: 900px;
   height: 560px;
@@ -21,26 +40,28 @@ title: Home
   box-shadow: 0 25px 50px rgba(0,0,0,0.25);
 }
 
+/* 페이지 */
 .page {
   width: 50%;
   background: #fbf8f2;
   padding: 26px;
-  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .page.left { border-right: 1px solid #d6cfc4; }
 .page.right { border-left: 1px solid #d6cfc4; }
 
+/* 표지 */
 .cover {
   background: #4a3628;
   color: #ffffff;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  font-size: 36px;
-  letter-spacing: 3px;
 }
 
+/* 텍스트 */
 .title {
   font-size: 22px;
   font-weight: bold;
@@ -51,45 +72,45 @@ title: Home
   font-style: italic;
   font-size: 14px;
   color: #6b5a4a;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .desc {
   font-size: 15px;
-  line-height: 1.7;
+  line-height: 1.75;
   color: #3b2a1a;
   white-space: pre-line;
 }
 
-.placeholder {
-  width: 100%;
+/* 잠금 */
+.locked {
   height: 100%;
-  border: 2px dashed #c8bfb3;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  color: #9a8f82;
-  font-size: 16px;
+  color: #8b7a6a;
 }
 
-.small-photo {
-  width: 180px;
-  height: 120px;
+.locked span {
+  font-size: 60px;
+  margin-bottom: 12px;
+}
+
+/* 사진 */
+.photos {
+  display: flex;
+  gap: 12px;
+}
+
+.photos img {
+  width: 200px;
+  height: 140px;
   object-fit: cover;
   border: 1px solid #b6a999;
-  margin: 10px 0;
 }
 
-.full-photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-#audio {
-  margin-top: 12px;
-}
-
+/* 네비 */
 #nav {
   margin-top: 16px;
 }
@@ -101,12 +122,17 @@ title: Home
   margin: 0 24px;
   cursor: pointer;
   color: #4a3628;
+  opacity: 0.55;
 }
+
+#nav button:hover { opacity: 1; }
 </style>
+</head>
+
+<body>
 
 <div id="book-stage">
   <div id="book"></div>
-
   <div id="nav">
     <button onclick="prev()">‹</button>
     <button onclick="next()">›</button>
@@ -114,17 +140,54 @@ title: Home
 </div>
 
 <script>
-const pages = [
-  // p.1 표지 (오른쪽만)
-  { type: "cover-right" },
-
-  // p.2 / p.3
-  { type: "photo-placeholder" },
+const data = [
+  { type: "cover" },
   { type: "guide" },
 
-  // p.4 / p.5
-  { type: "sparrow-info" },
-  { type: "sparrow-photo" }
+  {
+    id: "sparrow",
+    name: "참새",
+    sci: "Passer montanus",
+    unlocked: true,
+    desc: `
+참새는 한국 전역에서 가장 흔하게 관찰되는 소형 조류로,
+사람의 생활 공간과 매우 밀접하게 공존하는 종이다.
+
+몸길이는 약 14cm 정도이며,
+머리 옆의 검은 반점과 갈색·회색이 섞인 깃털이 특징이다.
+수컷과 암컷의 외형 차이는 거의 없다.
+
+주 서식지는 마을, 도시, 농경지, 공원 등이며
+전봇대, 지붕 틈, 나무 구멍 등에 둥지를 튼다.
+
+먹이는 곡식의 씨앗, 잡초 종자, 곤충 등으로
+계절에 따라 식성이 변한다.
+
+짹짹거리는 울음소리를 자주 내며
+무리를 이루어 행동하는 경우가 많다.
+`
+  },
+
+  {
+    id: "crow",
+    name: "까마귀",
+    sci: "Corvus corone",
+    unlocked: true,
+    desc: "높은 지능과 적응력을 가진 대형 조류."
+  },
+  {
+    id: "pigeon",
+    name: "비둘기",
+    sci: "Columba livia",
+    unlocked: true,
+    desc: "도시 환경에 잘 적응한 새."
+  },
+  {
+    id: "eagle",
+    name: "독수리",
+    sci: "Aquila chrysaetos",
+    unlocked: false
+  }
 ];
 
 let index = 0;
@@ -132,70 +195,54 @@ const book = document.getElementById("book");
 
 function render() {
   book.innerHTML = "";
-
-  // 표지는 오른쪽만
-  if (pages[index].type === "cover-right") {
-    const blank = document.createElement("div");
-    blank.className = "page left";
-    book.append(blank);
-
-    const cover = document.createElement("div");
-    cover.className = "page right cover";
-    cover.textContent = "새 도감";
-    book.append(cover);
-    return;
-  }
-
-  book.append(makePage(pages[index], "left"));
-  book.append(makePage(pages[index + 1], "right"));
+  book.append(makePage(data[index], "left"));
+  book.append(makePage(data[index + 1], "right"));
 }
 
-function makePage(p, side) {
-  const d = document.createElement("div");
-  d.className = `page ${side}`;
+function makePage(d, side) {
+  const p = document.createElement("div");
+  p.className = `page ${side}`;
+  if (!d) return p;
 
-  if (!p) return d;
-
-  if (p.type === "photo-placeholder") {
-    d.innerHTML = `<div class="placeholder">사진 추가 예정</div>`;
+  if (d.type === "cover") {
+    p.classList.add("cover");
+    p.innerHTML = "<h1>대한민국 새 도감</h1><p>나만의 기록형 도감</p>";
+    return p;
   }
 
-  if (p.type === "guide") {
-    d.innerHTML = `<div class="title">만나면 채워짐</div>`;
+  if (d.type === "guide") {
+    p.innerHTML = "<div class='title'>사용법</div><div class='desc'>새를 만나면 도감이 해금됩니다.</div>";
+    return p;
   }
 
-  if (p.type === "sparrow-info") {
-    d.innerHTML = `
-      <div class="title">참새</div>
-      <div class="sci">Passer montanus</div>
-      <img src="assets/images/b1.jpg" class="small-photo">
-
-      <div class="desc">
-참새는 참새목 참새과에 속하는 소형 텃새로,
-대한민국 전역에서 가장 흔히 관찰된다.
-
-몸길이는 약 14cm이며,
-뺨의 검은 반점이 특징이다.
-곡식과 풀씨를 먹고 여름에는 해충을 잡아먹는다.
-      </div>
-
-      <div id="audio">
-        <audio controls style="width:100%">
-          <source src="https://upload.wikimedia.org/wikipedia/commons/4/4c/Passer_montanus.ogg">
-        </audio>
-      </div>
+  if (side === "left") {
+    p.innerHTML = `
+      <div class="title">${d.name}</div>
+      <div class="sci">${d.sci}</div>
+      <div class="desc">${d.desc || ""}</div>
     `;
+  } else {
+    if (!d.unlocked) {
+      p.innerHTML = `<div class="locked"><span>🔒</span>미발견</div>`;
+    }
+    else if (d.id === "sparrow") {
+      p.innerHTML = `
+        <div class="photos">
+          <img src="assets/images/b1.jpg" alt="참새 백과사전 사진">
+          <img src="assets/images/b2.jpg" alt="내가 찍은 참새 사진">
+        </div>
+      `;
+    }
+    else {
+      p.innerHTML = `<div class="locked"><span>📷</span>관찰 기록 없음</div>`;
+    }
   }
 
-  if (p.type === "sparrow-photo") {
-    d.innerHTML = `<img src="assets/images/b2.jpg" class="full-photo">`;
-  }
-
-  return d;
+  return p;
 }
 
 function next() {
-  if (index < pages.length - 1) {
+  if (index < data.length - 2) {
     index += 2;
     render();
   }
@@ -209,4 +256,9 @@ function prev() {
 }
 
 render();
+</script>
+
+</body>
+</html>
+
 </script>
