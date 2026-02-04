@@ -1,5 +1,5 @@
 ---
-layout: null
+layout: page
 title: Home
 ---
 
@@ -7,74 +7,49 @@ title: Home
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>대한민국 새 도감</title>
+<title>새 도감</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 html, body {
   margin: 0;
   padding: 0;
-  width: 100%;
-  height: 100%;
   background: #ffffff;
   font-family: "Noto Serif KR", serif;
-  overflow: hidden;
+  height: 100%;
 }
 
-/* ===== 무대 ===== */
 #book-stage {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  perspective: 2000px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-/* ===== 책 ===== */
 #book {
   width: 900px;
   height: 560px;
-  position: relative;
+  display: flex;
   background: #4a3628;
   padding: 14px;
   border-radius: 6px;
   box-shadow: 0 25px 50px rgba(0,0,0,0.25);
-  display: flex;
-  overflow: hidden;
 }
 
-/* ===== 페이지 ===== */
 .page {
   width: 50%;
-  height: 100%;
   background: #fbf8f2;
   padding: 26px;
   box-sizing: border-box;
-  position: relative;
-  backface-visibility: hidden;
+  overflow: hidden;
 }
 
 .page.left { border-right: 1px solid #d6cfc4; }
 .page.right { border-left: 1px solid #d6cfc4; }
 
-/* ===== 넘김 애니메이션 ===== */
-.turn-next {
-  animation: turnNext 0.9s ease forwards;
-}
-.turn-prev {
-  animation: turnPrev 0.9s ease forwards;
-}
-
-@keyframes turnNext {
-  0% { transform: rotateY(0deg); }
-  100% { transform: rotateY(-180deg); }
-}
-@keyframes turnPrev {
-  0% { transform: rotateY(0deg); }
-  100% { transform: rotateY(180deg); }
-}
-
-/* ===== 공통 요소 ===== */
 .cover {
   background: #4a3628;
   color: #ffffff;
@@ -83,40 +58,41 @@ html, body {
   justify-content: center;
   align-items: center;
 }
-.cover h1 { font-size: 30px; margin-bottom: 8px; }
 
-.title { font-size: 22px; font-weight: bold; color: #3b2a1a; }
-.sci { font-style: italic; font-size: 14px; color: #6b5a4a; margin-bottom: 14px; }
-.desc { font-size: 15px; line-height: 1.7; color: #3b2a1a; }
-
-.photos {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
+.cover h1 {
+  font-size: 30px;
 }
-.photos img {
-  width: 180px;
-  height: 130px;
+
+.title {
+  font-size: 22px;
+  font-weight: bold;
+  color: #3b2a1a;
+}
+
+.sci {
+  font-style: italic;
+  font-size: 14px;
+  color: #6b5a4a;
+  margin-bottom: 14px;
+}
+
+.desc {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #3b2a1a;
+}
+
+.photo-full {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   border: 1px solid #b6a999;
 }
 
-/* ===== 잠김 ===== */
-.locked {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  color: #8b7a6a;
-}
-.locked span { font-size: 60px; margin-bottom: 12px; }
-
-/* ===== 네비 ===== */
 #nav {
-  text-align: center;
   margin-top: 16px;
 }
+
 #nav button {
   background: none;
   border: none;
@@ -126,7 +102,10 @@ html, body {
   color: #4a3628;
   opacity: 0.55;
 }
-#nav button:hover { opacity: 1; }
+
+#nav button:hover {
+  opacity: 1;
+}
 </style>
 </head>
 
@@ -142,63 +121,34 @@ html, body {
 </div>
 
 <script>
-/* ===== 데이터 ===== */
 const data = [
   { type: "cover" },
-  { type: "guide" },
 
   {
     id: "sparrow",
     name: "참새",
     sci: "Passer montanus",
-    unlocked: true,
     desc: `
-참새는 참새목 참새과에 속하는 소형 조류로, 몸길이는 약 14cm 내외이다.
-머리는 갈색이며 뺨에 검은 반점이 있고, 부리는 짧고 굵다.
+참새는 참새목 참새과에 속하는 소형 조류로,
+사람이 사는 곳 가까이에서 가장 흔히 볼 수 있는 텃새이다.
 
-사람의 거주지와 가까운 곳에서 서식하는 대표적인 텃새로,
-논밭·마을·도시 전반에서 관찰된다.
-주식은 곡식과 풀씨이지만,
-번식기에는 해충을 잡아먹어 생태계에 기여한다.
-
-둥지는 처마 밑, 돌담 틈, 나무 구멍 등에 만들며
-연 2~3회 번식한다.
+몸길이는 약 14cm이며 갈색 깃털과
+뺨의 검은 반점이 특징이다.
+곡식과 풀씨를 주로 먹지만
+번식기에는 해충도 잡아먹는다.
 `
-  },
-
-  {
-    id: "crow",
-    name: "까마귀",
-    sci: "Corvus corone",
-    unlocked: true,
-    desc: "높은 지능과 도구 사용 능력으로 유명한 대형 조류."
-  },
-
-  {
-    id: "eagle",
-    name: "독수리",
-    sci: "Aquila chrysaetos",
-    unlocked: false
   }
 ];
 
 let index = 0;
 const book = document.getElementById("book");
 
-/* ===== 렌더 ===== */
-function render(anim=null) {
+function render() {
   book.innerHTML = "";
-
-  const left = makePage(data[index], "left");
-  const right = makePage(data[index + 1], "right");
-
-  if (anim === "next") right.classList.add("turn-next");
-  if (anim === "prev") left.classList.add("turn-prev");
-
-  book.append(left, right);
+  book.append(makePage(data[index], "left"));
+  book.append(makePage(data[index + 1], "right"));
 }
 
-/* ===== 페이지 생성 ===== */
 function makePage(d, side) {
   const p = document.createElement("div");
   p.className = `page ${side}`;
@@ -207,72 +157,43 @@ function makePage(d, side) {
 
   if (d.type === "cover") {
     p.classList.add("cover");
-    p.innerHTML = "<h1>대한민국 새 도감</h1><p>나만의 기록형 도감</p>";
+    p.innerHTML = "<h1>새 도감</h1>";
     return p;
   }
 
-  if (d.type === "guide") {
-    p.innerHTML = `
-      <div class="title">사용법</div>
-      <div class="desc">새를 발견하면 페이지가 해금됩니다.</div>
-    `;
-    return p;
-  }
-
-  /* ===== 참새 페이지 ===== */
-  if (d.id === "sparrow") {
-    if (side === "left") {
-      p.innerHTML = `
-        <div class="title">${d.name}</div>
-        <div class="sci">${d.sci}</div>
-        <div class="desc">${d.desc}</div>
-      `;
-    } else {
-      p.innerHTML = `
-        <div class="photos">
-          <img src="assets/images/b1.jpg" alt="참새 백과사전 사진">
-          <img src="assets/images/b2.jpg" alt="내가 찍은 참새 사진">
-        </div>
-
-        <div class="desc" style="margin-top:14px;">
-          🔊 울음소리
-          <audio controls style="width:100%; margin-top:6px;">
-            <source src="https://upload.wikimedia.org/wikipedia/commons/4/4c/Passer_montanus.ogg" type="audio/ogg">
-          </audio>
-        </div>
-      `;
-    }
-    return p;
-  }
-
-  /* ===== 기타 새 ===== */
+  /* 참새 페이지 */
   if (side === "left") {
     p.innerHTML = `
       <div class="title">${d.name}</div>
       <div class="sci">${d.sci}</div>
-      <div class="desc">${d.desc || ""}</div>
+      <div class="desc">${d.desc}</div>
+      <img src="assets/images/b1.jpg" class="photo-full" style="margin-top:12px;">
     `;
   } else {
-    if (!d.unlocked) {
-      p.innerHTML = `<div class="locked"><span>🔒</span>미발견</div>`;
-    }
+    p.innerHTML = `
+      <img src="assets/images/b2.jpg" class="photo-full">
+      <div class="desc" style="margin-top:12px;">
+        <audio controls style="width:100%;">
+          <source src="https://upload.wikimedia.org/wikipedia/commons/4/4c/Passer_montanus.ogg" type="audio/ogg">
+        </audio>
+      </div>
+    `;
   }
 
   return p;
 }
 
-/* ===== 네비 ===== */
 function next() {
   if (index < data.length - 2) {
     index += 2;
-    render("next");
+    render();
   }
 }
 
 function prev() {
   if (index > 0) {
     index -= 2;
-    render("prev");
+    render();
   }
 }
 
