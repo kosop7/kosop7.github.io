@@ -2,4 +2,338 @@
 layout: page
 title: Home
 ---
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<title>대한민국 새 도감</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<style>
+/* =========================
+   기본 리셋 & 폰트
+========================= */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #2b2b2b;
+  font-family: "Noto Serif KR", serif;
+  overflow: hidden;
+}
+
+/* =========================
+   책 컨테이너
+========================= */
+#book-wrapper {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#book {
+  width: 900px;
+  height: 600px;
+  perspective: 2000px;
+  position: relative;
+}
+
+/* =========================
+   페이지 공통
+========================= */
+.page {
+  width: 450px;
+  height: 600px;
+  position: absolute;
+  top: 0;
+  background: #f8f5ef;
+  border: 1px solid #c9c4b8;
+  overflow: hidden;
+  padding: 24px;
+}
+
+.page.left {
+  left: 0;
+  border-right: none;
+}
+
+.page.right {
+  left: 450px;
+  border-left: none;
+}
+
+/* =========================
+   표지
+========================= */
+.cover {
+  background: #3a2f28;
+  color: #f5f1e8;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.cover h1 {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.cover p {
+  opacity: 0.8;
+}
+
+/* =========================
+   도감 왼쪽 페이지
+========================= */
+.species-name {
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.scientific {
+  font-style: italic;
+  font-size: 14px;
+  opacity: 0.7;
+  margin-bottom: 12px;
+}
+
+.info-box {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* =========================
+   오른쪽 (사진/잠금)
+========================= */
+.locked {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  opacity: 0.5;
+}
+
+.locked .icon {
+  font-size: 64px;
+  margin-bottom: 12px;
+}
+
+.photo-area {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.photo-area input {
+  margin-bottom: 8px;
+}
+
+.photo-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.photo-grid img {
+  width: 120px;
+  height: 90px;
+  object-fit: cover;
+  border: 1px solid #aaa;
+}
+
+/* =========================
+   네비게이션
+========================= */
+#nav {
+  position: fixed;
+  bottom: 20px;
+  width: 100%;
+  text-align: center;
+}
+
+#nav button {
+  font-size: 16px;
+  padding: 6px 16px;
+  margin: 0 10px;
+}
+</style>
+</head>
+
+<body>
+<div id="book-wrapper">
+  <div id="book">
+    <!-- 페이지는 JS에서 생성 -->
+  </div>
+</div>
+
+<div id="nav">
+  <button onclick="prevPage()">◀ 이전</button>
+  <button onclick="nextPage()">다음 ▶</button>
+</div>
+
+<script>
+/* =========================
+   도감 데이터 (확장 가능)
+========================= */
+const speciesData = [
+  {
+    id: "cover",
+    type: "cover"
+  },
+  {
+    id: "guide",
+    type: "guide"
+  },
+  {
+    id: "sparrow",
+    name: "참새",
+    sci: "Passer montanus",
+    unlocked: true,
+    desc: "대한민국 전역에서 가장 흔히 관찰되는 소형 조류."
+  },
+  {
+    id: "crow",
+    name: "까마귀",
+    sci: "Corvus corone",
+    unlocked: true,
+    desc: "높은 지능과 적응력을 가진 대형 조류."
+  },
+  {
+    id: "pigeon",
+    name: "비둘기",
+    sci: "Columba livia",
+    unlocked: true,
+    desc: "도시 환경에 잘 적응한 대표적 새."
+  },
+  {
+    id: "eagle",
+    name: "독수리",
+    sci: "Aquila chrysaetos",
+    unlocked: false,
+    desc: ""
+  }
+];
+
+/* =========================
+   페이지 상태
+========================= */
+let currentIndex = 0;
+const book = document.getElementById("book");
+
+/* =========================
+   localStorage 사진
+========================= */
+function getPhotos(id) {
+  return JSON.parse(localStorage.getItem("photos_" + id) || "[]");
+}
+function savePhoto(id, data) {
+  const arr = getPhotos(id);
+  arr.push(data);
+  localStorage.setItem("photos_" + id, JSON.stringify(arr));
+}
+
+/* =========================
+   렌더링
+========================= */
+function render() {
+  book.innerHTML = "";
+  const leftData = speciesData[currentIndex];
+  const rightData = speciesData[currentIndex + 1];
+
+  if (leftData) book.appendChild(makeLeft(leftData));
+  if (rightData) book.appendChild(makeRight(rightData));
+}
+
+function makeLeft(data) {
+  const div = document.createElement("div");
+  div.className = "page left";
+
+  if (data.type === "cover") {
+    div.classList.add("cover");
+    div.innerHTML = "<h1>대한민국 새 도감</h1><p>나만의 기록형 도감</p>";
+    return div;
+  }
+
+  if (data.type === "guide") {
+    div.innerHTML = "<h2>사용법</h2><p>새를 만나면 해금하고 사진을 기록하세요.</p>";
+    return div;
+  }
+
+  div.innerHTML = `
+    <div class="species-name">${data.name}</div>
+    <div class="scientific">${data.sci}</div>
+    <div class="info-box">${data.desc}</div>
+  `;
+  return div;
+}
+
+function makeRight(data) {
+  const div = document.createElement("div");
+  div.className = "page right";
+
+  if (!data || data.type) return div;
+
+  if (!data.unlocked) {
+    div.innerHTML = `
+      <div class="locked">
+        <div class="icon">🔒</div>
+        <div>아직 발견하지 못한 새</div>
+      </div>
+    `;
+    return div;
+  }
+
+  const photos = getPhotos(data.id);
+  div.innerHTML = `
+    <div class="photo-area">
+      <input type="file" accept="image/*" />
+      <div class="photo-grid"></div>
+    </div>
+  `;
+
+  const input = div.querySelector("input");
+  const grid = div.querySelector(".photo-grid");
+
+  photos.forEach(p => {
+    const img = document.createElement("img");
+    img.src = p;
+    grid.appendChild(img);
+  });
+
+  input.onchange = e => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = () => {
+      savePhoto(data.id, reader.result);
+      render();
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return div;
+}
+
+/* =========================
+   네비게이션
+========================= */
+function nextPage() {
+  if (currentIndex < speciesData.length - 2) {
+    currentIndex += 2;
+    render();
+  }
+}
+function prevPage() {
+  if (currentIndex > 0) {
+    currentIndex -= 2;
+    render();
+  }
+}
+
+render();
+</script>
+</body>
+</html>
 
