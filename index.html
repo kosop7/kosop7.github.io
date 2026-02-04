@@ -2,3 +2,169 @@
 layout: page
 title: Home
 ---
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>Bird Map KR</title>
+
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont;
+      background: #0e0e0e;
+      color: #fff;
+    }
+
+    #map {
+      height: 100%;
+      width: 70%;
+      float: left;
+    }
+
+    #info {
+      width: 30%;
+      height: 100%;
+      float: right;
+      padding: 16px;
+      box-sizing: border-box;
+      background: #111;
+      border-left: 1px solid #222;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 18px;
+    }
+
+    ul {
+      padding-left: 18px;
+    }
+
+    .empty {
+      opacity: 0.6;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="map"></div>
+<div id="info">
+  <h2>지역을 선택하세요</h2>
+  <p class="empty">지도에서 시·군·구를 클릭</p>
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+/* ===============================
+   1. 새 기록 데이터
+================================ */
+const birdsData = {
+  "강서구": [
+    { name: "비둘기", date: "2026-02-01", note: "한강 근처" }
+  ],
+  "의왕시": [
+    { name: "물까치", date: "2026-01-20", note: "왕송호수" }
+  ]
+};
+
+/* ===============================
+   2. 지도 초기화
+================================ */
+const map = L.map('map', {
+  zoomControl: false
+}).setView([36.5, 127.8], 7);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap'
+}).addTo(map);
+
+/* ===============================
+   3. 스타일 (게임 맵 느낌)
+================================ */
+function regionStyle(feature) {
+  const name =
+    feature.properties.name ||
+    feature.properties.NAME ||
+    feature.properties.sig_kor_nm;
+
+  const hasBirds = birdsData[name];
+
+  return {
+    fillColor: hasBirds ? '#00c896' : '#333',
+    weight: 1,
+    color: '#111',
+    fillOpacity: hasBirds ? 0.85 : 0.4
+  };
+}
+
+/* ===============================
+   4. 클릭 이벤트
+================================ */
+function onEachRegion(feature, layer) {
+  const name =
+    feature.properties.name ||
+    feature.properties.NAME ||
+    feature.properties.sig_kor_nm;
+
+  layer.on({
+    click: () => showInfo(name),
+    mouseover: () => layer.setStyle({ fillOpacity: 1 }),
+    mouseout: () => layer.setStyle(regionStyle(feature))
+  });
+}
+
+/* ===============================
+   5. 정보 패널 표시
+================================ */
+const info = document.getElementById('info');
+
+function showInfo(region) {
+  const list = birdsData[region];
+
+  if (!list) {
+    info.innerHTML = `
+      <h2>${region}</h2>
+      <p class="empty">이 지역의 기록 없음</p>
+    `;
+    return;
+  }
+
+  let html = `<h2>${region}</h2><ul>`;
+  list.forEach(b => {
+    html += `<li><b>${b.name}</b> (${b.date})<br><small>${b.note}</small></li>`;
+  });
+  html += `</ul>`;
+
+  info.innerHTML = html;
+}
+
+/* ===============================
+   6. 대한민국 GeoJSON 로드
+   (southkorea-maps GitHub)
+================================ */
+fetch(
+  "https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2018/json/skorea_municipalities_geo.json"
+)
+  .then(res => res.json())
+  .then(data => {
+    L.geoJSON(data, {
+      style: regionStyle,
+      onEachFeature: onEachRegion
+    }).addTo(map);
+  });
+</script>
+
+</body>
+</html>
