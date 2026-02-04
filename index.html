@@ -1,34 +1,14 @@
 ---
-layout: null
-title: 새 도감
+layout: page
+title: Home
 ---
 
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<title>새 도감</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <style>
-html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  background: #ffffff;
-  font-family: "Noto Serif KR", serif;
-  overflow: hidden;
-}
-
 #book-stage {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin: 80px 0;
 }
 
 #book {
@@ -46,24 +26,21 @@ html, body {
   background: #fbf8f2;
   padding: 26px;
   box-sizing: border-box;
-  overflow: hidden;
 }
 
 .page.left { border-right: 1px solid #d6cfc4; }
 .page.right { border-left: 1px solid #d6cfc4; }
 
-/* 표지 */
 .cover {
   background: #4a3628;
   color: #ffffff;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 34px;
-  letter-spacing: 2px;
+  font-size: 36px;
+  letter-spacing: 3px;
 }
 
-/* 공통 텍스트 */
 .title {
   font-size: 22px;
   font-weight: bold;
@@ -74,7 +51,7 @@ html, body {
   font-style: italic;
   font-size: 14px;
   color: #6b5a4a;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .desc {
@@ -84,7 +61,6 @@ html, body {
   white-space: pre-line;
 }
 
-/* 빈 사진 페이지 */
 .placeholder {
   width: 100%;
   height: 100%;
@@ -96,17 +72,22 @@ html, body {
   font-size: 16px;
 }
 
-/* 참새 페이지 */
-.full-photo {
-  width: 100%;
-  height: 240px;
+.small-photo {
+  width: 180px;
+  height: 120px;
   object-fit: cover;
   border: 1px solid #b6a999;
-  margin-top: 14px;
+  margin: 10px 0;
 }
 
-.audio {
-  margin: 14px 0;
+.full-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#audio {
+  margin-top: 12px;
 }
 
 #nav {
@@ -120,14 +101,8 @@ html, body {
   margin: 0 24px;
   cursor: pointer;
   color: #4a3628;
-  opacity: 0.55;
 }
-
-#nav button:hover { opacity: 1; }
 </style>
-</head>
-
-<body>
 
 <div id="book-stage">
   <div id="book"></div>
@@ -139,33 +114,17 @@ html, body {
 </div>
 
 <script>
-const data = [
-  { type: "cover" },
+const pages = [
+  // p.1 표지 (오른쪽만)
+  { type: "cover-right" },
 
-  { type: "blank-photo" },
-
+  // p.2 / p.3
+  { type: "photo-placeholder" },
   { type: "guide" },
 
-  {
-    type: "sparrow",
-    name: "참새",
-    sci: "Passer montanus",
-    desc: `
-참새는 참새목 참새과에 속하는 소형 조류로,
-한국 전역에서 매우 흔하게 관찰되는 텃새이다.
-
-몸길이는 약 14cm이며,
-머리에는 갈색과 검은색 무늬가 있고
-뺨에 뚜렷한 검은 반점이 있는 것이 특징이다.
-
-주로 곡식의 씨앗, 풀씨, 곤충을 먹고,
-번식기에는 해충을 잡아먹어
-인간 생활에 이로운 역할을 한다.
-
-사람이 사는 마을, 논밭, 공원 등
-인간 생활권에 잘 적응하여 살아간다.
-`
-  }
+  // p.4 / p.5
+  { type: "sparrow-info" },
+  { type: "sparrow-photo" }
 ];
 
 let index = 0;
@@ -173,54 +132,70 @@ const book = document.getElementById("book");
 
 function render() {
   book.innerHTML = "";
-  book.append(makePage(data[index], "left"));
-  book.append(makePage(data[index + 1], "right"));
+
+  // 표지는 오른쪽만
+  if (pages[index].type === "cover-right") {
+    const blank = document.createElement("div");
+    blank.className = "page left";
+    book.append(blank);
+
+    const cover = document.createElement("div");
+    cover.className = "page right cover";
+    cover.textContent = "새 도감";
+    book.append(cover);
+    return;
+  }
+
+  book.append(makePage(pages[index], "left"));
+  book.append(makePage(pages[index + 1], "right"));
 }
 
-function makePage(d, side) {
-  const p = document.createElement("div");
-  p.className = `page ${side}`;
-  if (!d) return p;
+function makePage(p, side) {
+  const d = document.createElement("div");
+  d.className = `page ${side}`;
 
-  if (d.type === "cover") {
-    p.classList.add("cover");
-    p.textContent = "새 도감";
-    return p;
+  if (!p) return d;
+
+  if (p.type === "photo-placeholder") {
+    d.innerHTML = `<div class="placeholder">사진 추가 예정</div>`;
   }
 
-  if (d.type === "blank-photo") {
-    p.innerHTML = `<div class="placeholder">사진 추가 예정</div>`;
-    return p;
+  if (p.type === "guide") {
+    d.innerHTML = `<div class="title">만나면 채워짐</div>`;
   }
 
-  if (d.type === "guide") {
-    p.innerHTML = `<div class="title">만나면 채워짐</div>`;
-    return p;
-  }
+  if (p.type === "sparrow-info") {
+    d.innerHTML = `
+      <div class="title">참새</div>
+      <div class="sci">Passer montanus</div>
+      <img src="assets/images/b1.jpg" class="small-photo">
 
-  if (d.type === "sparrow") {
-    p.innerHTML = `
-      <div class="title">${d.name}</div>
-      <div class="sci">${d.sci}</div>
-      <div class="desc">${d.desc}</div>
+      <div class="desc">
+참새는 참새목 참새과에 속하는 소형 텃새로,
+대한민국 전역에서 가장 흔히 관찰된다.
 
-      <div class="audio">
-        <strong>울음소리</strong><br>
-        <audio controls style="width:100%; margin-top:6px;">
-          <source src="https://upload.wikimedia.org/wikipedia/commons/4/4c/Passer_montanus.ogg" type="audio/ogg">
-        </audio>
+몸길이는 약 14cm이며,
+뺨의 검은 반점이 특징이다.
+곡식과 풀씨를 먹고 여름에는 해충을 잡아먹는다.
       </div>
 
-      <img src="assets/images/b2.jpg" class="full-photo" alt="참새 사진">
+      <div id="audio">
+        <audio controls style="width:100%">
+          <source src="https://upload.wikimedia.org/wikipedia/commons/4/4c/Passer_montanus.ogg">
+        </audio>
+      </div>
     `;
-    return p;
   }
 
-  return p;
+  if (p.type === "sparrow-photo") {
+    d.innerHTML = `<img src="assets/images/b2.jpg" class="full-photo">`;
+  }
+
+  return d;
 }
 
 function next() {
-  if (index < data.length - 2) {
+  if (index < pages.length - 1) {
     index += 2;
     render();
   }
@@ -235,6 +210,3 @@ function prev() {
 
 render();
 </script>
-
-</body>
-</html>
