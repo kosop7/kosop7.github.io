@@ -86,26 +86,21 @@ html, body {
 .locked {
   height: 100%;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
   color: #8b7a6a;
-}
-
-.locked span {
-  font-size: 60px;
-  margin-bottom: 12px;
+  font-size: 42px;
 }
 
 /* 사진 */
 .photos {
   display: flex;
-  gap: 12px;
+  gap: 14px;
 }
 
 .photos img {
-  width: 200px;
-  height: 140px;
+  width: 220px;
+  height: 150px;
   object-fit: cover;
   border: 1px solid #b6a999;
 }
@@ -150,21 +145,21 @@ const data = [
     sci: "Passer montanus",
     unlocked: true,
     desc: `
-참새는 한국 전역에서 가장 흔하게 관찰되는 소형 조류로,
-사람의 생활 공간과 매우 밀접하게 공존하는 종이다.
+참새는 대한민국 전역에서 가장 흔히 관찰되는 소형 조류로,
+사람의 생활권과 밀접하게 공존하는 대표적인 텃새이다.
 
 몸길이는 약 14cm 정도이며,
 머리 옆의 검은 반점과 갈색·회색이 섞인 깃털이 특징이다.
-수컷과 암컷의 외형 차이는 거의 없다.
+암수의 외형 차이는 거의 없다.
 
-주 서식지는 마을, 도시, 농경지, 공원 등이며
-전봇대, 지붕 틈, 나무 구멍 등에 둥지를 튼다.
+마을, 도시, 농경지, 공원 등 다양한 환경에 적응하며
+전봇대, 건물 틈, 나무 구멍 등에 둥지를 튼다.
 
-먹이는 곡식의 씨앗, 잡초 종자, 곤충 등으로
-계절에 따라 식성이 변한다.
+먹이는 곡식의 씨앗, 잡초 종자, 작은 곤충 등으로
+계절에 따라 식성이 달라진다.
 
 짹짹거리는 울음소리를 자주 내며
-무리를 이루어 행동하는 경우가 많다.
+무리를 지어 행동하는 경우가 많다.
 `
   },
 
@@ -211,7 +206,9 @@ function makePage(d, side) {
   }
 
   if (d.type === "guide") {
-    p.innerHTML = "<div class='title'>사용법</div><div class='desc'>새를 만나면 도감이 해금됩니다.</div>";
+    p.innerHTML =
+      "<div class='title'>사용법</div>" +
+      "<div class='desc'>새를 직접 관찰하면 도감이 채워집니다.</div>";
     return p;
   }
 
@@ -223,18 +220,15 @@ function makePage(d, side) {
     `;
   } else {
     if (!d.unlocked) {
-      p.innerHTML = `<div class="locked"><span>🔒</span>미발견</div>`;
-    }
-    else if (d.id === "sparrow") {
+      p.innerHTML = `<div class="locked">🔒</div>`;
+    } else {
+      /* ✅ 해금된 새 = 무조건 관찰 사진 표시 */
       p.innerHTML = `
         <div class="photos">
-          <img src="assets/images/b1.jpg" alt="참새 백과사전 사진">
-          <img src="assets/images/b2.jpg" alt="내가 찍은 참새 사진">
+          <img src="assets/images/b1.jpg" alt="백과사전 사진">
+          <img src="assets/images/b2.jpg" alt="관찰 사진">
         </div>
       `;
-    }
-    else {
-      p.innerHTML = `<div class="locked"><span>📷</span>관찰 기록 없음</div>`;
     }
   }
 
@@ -260,5 +254,3 @@ render();
 
 </body>
 </html>
-
-</script>
