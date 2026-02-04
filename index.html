@@ -1,13 +1,13 @@
 ---
 layout: null
-title: 대한민국 새 도감
+title: 새 도감
 ---
 
 <!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>대한민국 새 도감</title>
+<title>새 도감</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -52,20 +52,18 @@ html, body {
 .page.left { border-right: 1px solid #d6cfc4; }
 .page.right { border-left: 1px solid #d6cfc4; }
 
+/* 표지 */
 .cover {
   background: #4a3628;
   color: #ffffff;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
+  font-size: 34px;
+  letter-spacing: 2px;
 }
 
-.cover h1 {
-  font-size: 30px;
-  margin-bottom: 8px;
-}
-
+/* 공통 텍스트 */
 .title {
   font-size: 22px;
   font-weight: bold;
@@ -86,24 +84,29 @@ html, body {
   white-space: pre-line;
 }
 
-.small-photo {
-  width: 180px;
-  height: 130px;
-  object-fit: cover;
-  border: 1px solid #b6a999;
-  margin-bottom: 14px;
+/* 빈 사진 페이지 */
+.placeholder {
+  width: 100%;
+  height: 100%;
+  border: 2px dashed #c8bfb3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #9a8f82;
+  font-size: 16px;
 }
 
+/* 참새 페이지 */
 .full-photo {
   width: 100%;
   height: 240px;
   object-fit: cover;
   border: 1px solid #b6a999;
-  margin-top: 16px;
+  margin-top: 14px;
 }
 
 .audio {
-  margin-top: 14px;
+  margin: 14px 0;
 }
 
 #nav {
@@ -120,9 +123,7 @@ html, body {
   opacity: 0.55;
 }
 
-#nav button:hover {
-  opacity: 1;
-}
+#nav button:hover { opacity: 1; }
 </style>
 </head>
 
@@ -140,21 +141,29 @@ html, body {
 <script>
 const data = [
   { type: "cover" },
+
+  { type: "blank-photo" },
+
+  { type: "guide" },
+
   {
-    id: "sparrow",
+    type: "sparrow",
     name: "참새",
     sci: "Passer montanus",
     desc: `
-참새는 참새목 참새과에 속하는 소형 조류로, 한국에서 매우 흔히 관찰되는 텃새이다.
-몸길이는 약 14cm 내외이며, 머리에는 갈색과 검은색 무늬가 있고 뺨에 특징적인 검은 반점이 있다.
+참새는 참새목 참새과에 속하는 소형 조류로,
+한국 전역에서 매우 흔하게 관찰되는 텃새이다.
 
-주로 곡식의 씨앗, 풀씨, 곤충 등을 먹으며, 번식기에는 해충을 잡아먹어 농업에 이로운 역할을 한다.
-사람이 사는 마을, 논밭, 공원 등 인간 생활권과 밀접한 환경에 적응해 살아간다.
+몸길이는 약 14cm이며,
+머리에는 갈색과 검은색 무늬가 있고
+뺨에 뚜렷한 검은 반점이 있는 것이 특징이다.
 
-둥지는 처마 밑, 돌담 틈, 건물의 작은 구멍 등에 만들며,
-한 번에 4~6개의 알을 낳는다.
+주로 곡식의 씨앗, 풀씨, 곤충을 먹고,
+번식기에는 해충을 잡아먹어
+인간 생활에 이로운 역할을 한다.
 
-울음소리는 짧고 반복적인 ‘짹짹’ 소리로 잘 알려져 있다.
+사람이 사는 마을, 논밭, 공원 등
+인간 생활권에 잘 적응하여 살아간다.
 `
   }
 ];
@@ -175,19 +184,25 @@ function makePage(d, side) {
 
   if (d.type === "cover") {
     p.classList.add("cover");
-    p.innerHTML = "<h1>대한민국 새 도감</h1><p>참새</p>";
+    p.textContent = "새 도감";
     return p;
   }
 
-  if (side === "left") {
+  if (d.type === "blank-photo") {
+    p.innerHTML = `<div class="placeholder">사진 추가 예정</div>`;
+    return p;
+  }
+
+  if (d.type === "guide") {
+    p.innerHTML = `<div class="title">만나면 채워짐</div>`;
+    return p;
+  }
+
+  if (d.type === "sparrow") {
     p.innerHTML = `
       <div class="title">${d.name}</div>
       <div class="sci">${d.sci}</div>
       <div class="desc">${d.desc}</div>
-    `;
-  } else {
-    p.innerHTML = `
-      <img src="assets/images/b1.jpg" alt="참새 백과사전 사진" class="small-photo">
 
       <div class="audio">
         <strong>울음소리</strong><br>
@@ -196,8 +211,9 @@ function makePage(d, side) {
         </audio>
       </div>
 
-      <img src="assets/images/b2.jpg" alt="내가 찍은 참새 사진" class="full-photo">
+      <img src="assets/images/b2.jpg" class="full-photo" alt="참새 사진">
     `;
+    return p;
   }
 
   return p;
