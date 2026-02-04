@@ -2,3 +2,80 @@
 layout: page
 title: Home
 ---
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>SSJ2 Awakening – Fan Mini Game (High Detail)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    html, body { margin:0; padding:0; background:#000; color:#fff; font-family: system-ui, -apple-system, sans-serif; }
+    canvas { display:block; }
+    #ui { position:fixed; left:0; right:0; bottom:0; padding:12px; display:flex; gap:12px; align-items:center; background:rgba(0,0,0,.6)}
+    button { background:#ffd700; border:0; padding:10px 14px; font-weight:800; cursor:pointer }
+    #hint { opacity:.85; font-size:14px }
+  </style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="ui">
+  <button id="power">각성</button>
+  <div id="hint">스페이스바 / 버튼 연타 → 분노 폭주</div>
+</div>
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+function resize(){ canvas.width=innerWidth; canvas.height=innerHeight } addEventListener('resize',resize); resize();
+
+let energy=0, awakened=false, shake=0, t=0;
+const cx=()=>canvas.width/2, cy=()=>canvas.height*0.68;
+
+function addEnergy(){ if(awakened) return; energy=Math.min(100, energy+4); if(energy>=100) awakened=true; }
+document.getElementById('power').onclick=addEnergy;
+// 모바일 터치 입력
+canvas.addEventListener('touchstart', e => { e.preventDefault(); addEnergy(); }, { passive:false });
+addEventListener('keydown',e=>{ if(e.code==='Space') addEnergy(); });
+
+function bg(){ const g=ctx.createLinearGradient(0,0,0,canvas.height); g.addColorStop(0,'#0a0b1c'); g.addColorStop(1,'#000'); ctx.fillStyle=g; ctx.fillRect(0,0,canvas.width,canvas.height); }
+
+function lightning(){ if(!awakened && energy<55) return; ctx.strokeStyle='rgba(200,220,255,.95)'; ctx.lineWidth=2; for(let k=0;k<(awakened?3:1);k++){ ctx.beginPath(); let x=cx()+Math.sin(t*1.7+k)*120, y=0; ctx.moveTo(x,y); while(y<canvas.height){ x+= (Math.random()-.5)*50; y+= Math.random()*45+25; ctx.lineTo(x,y);} ctx.stroke(); }}
+
+function aura(){ const r=(awakened?140:70+energy*0.9)+(Math.sin(t*2)*10); ctx.beginPath(); ctx.arc(cx(),cy(),r,0,Math.PI*2); ctx.fillStyle=awakened?'rgba(255,215,0,.38)':'rgba(255,255,255,.18)'; ctx.fill(); }
+
+function drawGi(){ // 상의(보라), 허리띠(파랑)
+  ctx.fillStyle='#5a2c83'; ctx.fillRect(cx()-26, cy()-86, 52, 56);
+  ctx.fillStyle='#2c6fd6'; ctx.fillRect(cx()-28, cy()-34, 56, 10);
+  // 하의
+  ctx.fillStyle='#5a2c83'; ctx.fillRect(cx()-24, cy()-24, 18, 36); ctx.fillRect(cx()+6, cy()-24, 18, 36);
+  // 부츠
+  ctx.fillStyle='#e0c28b'; ctx.fillRect(cx()-26, cy()+12, 22, 10); ctx.fillRect(cx()+4, cy()+12, 22, 10);
+  ctx.fillStyle='#1f4fb8'; ctx.fillRect(cx()-26, cy()+22, 22, 8); ctx.fillRect(cx()+4, cy()+22, 22, 8);
+}
+
+function head(){ // 얼굴
+  ctx.beginPath(); ctx.arc(cx(), cy()-98, 20, 0, Math.PI*2); ctx.fillStyle='#f1c27d'; ctx.fill();
+  // 눈썹(분노)
+  ctx.strokeStyle='#000'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(cx()-10, cy()-103); ctx.lineTo(cx()-2, cy()-105); ctx.moveTo(cx()+2, cy()-105); ctx.lineTo(cx()+10, cy()-103); ctx.stroke();
+  // 눈
+  ctx.fillStyle='#000'; ctx.fillRect(cx()-7, cy()-97, 3, 3); ctx.fillRect(cx()+4, cy()-97, 3, 3);
+  // 입
+  ctx.strokeStyle='#000'; ctx.beginPath(); ctx.moveTo(cx()-5, cy()-90); ctx.lineTo(cx()+5, cy()-90); ctx.stroke();
+}
+
+function hair(){ // SSJ2 특유의 날카로운 스파이크 + 번개 느낌
+  ctx.fillStyle=awakened?'#ffd700':'#111';
+  const baseY=cy()-118;
+  const spikes=[[-26,baseY+18,-6,baseY-30,6,baseY+18],[-10,baseY+16,0,baseY-40,10,baseY+16],[6,baseY+18,26,baseY-26,40,baseY+20]];
+  spikes.forEach(s=>{ ctx.beginPath(); ctx.moveTo(cx()+s[0],s[1]); ctx.lineTo(cx()+s[2],s[3]); ctx.lineTo(cx()+s[4],s[5]); ctx.closePath(); ctx.fill(); });
+}
+
+function gauge(){ const w=260,h=14,x=cx()-w/2,y=36; ctx.strokeStyle='#fff'; ctx.strokeRect(x,y,w,h); ctx.fillStyle='#ffd700'; ctx.fillRect(x,y,w*(energy/100),h); ctx.fillStyle='#fff'; ctx.font='16px sans-serif'; ctx.textAlign='center'; ctx.fillText(awakened?'초사이언2 각성':'분노 게이지',cx(),y-8); }
+
+function update(){ t+=0.016; shake=awakened?7:(energy>60?3:0); }
+
+function render(){ ctx.save(); if(shake) ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake); bg(); lightning(); aura(); drawGi(); head(); hair(); ctx.restore(); gauge(); }
+
+(function loop(){ update(); render(); requestAnimationFrame(loop); })();
+</script>
+</body>
+</html>
