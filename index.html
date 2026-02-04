@@ -7,7 +7,7 @@
   <style>
     html,body{margin:0;padding:0;background:#000;color:#fff;font-family:system-ui,-apple-system,sans-serif;touch-action:manipulation}
     canvas{display:block}
-    #ui{position:fixed;left:0;right:0;bottom:0;padding:10px 12px;background:linear-gradient(transparent,rgba(0,0,0,.75));display:flex;gap:10px;align-items:center}
+    #ui{display:none}
     #hint{opacity:.85;font-size:13px}
   </style>
 </head>
@@ -23,9 +23,9 @@ function resize(){canvas.width=innerWidth;canvas.height=innerHeight}addEventList
 // ====== Global State ======
 let scene=0, t=0, shake=0;
 let energy=0, awakened=false;
-const SCALE=1.35;              // 더 큰 클로즈업
+const SCALE=1.25; // 모바일 중앙 기준 스케일 보정              // 더 큰 클로즈업
 const cx=()=>canvas.width/2;   // 중앙 유지
-const cy=()=>canvas.height*0.76; // 하단 배치
+const cy=()=>canvas.height/2; // 중앙 정렬 // 하단 배치
 
 // ====== Utilities ======
 function vibrate(p){ if(navigator.vibrate) navigator.vibrate(p); }
@@ -103,27 +103,26 @@ function hair(ssj2=false){
   });
 }
 
-// ====== Captions ======
-function caption(text){ ctx.save(); ctx.globalAlpha=.94; ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fillRect(0, canvas.height-130, canvas.width, 130); ctx.fillStyle='#fff'; ctx.font='15px system-ui'; ctx.textAlign='center'; wrap(text, canvas.width/2, canvas.height-92, canvas.width-40, 22); ctx.restore(); }
+// (캡션 제거됨: 장면 연출만 사용)
 function wrap(text,x,y,w,l){ const words=text.split(' '); let line=''; let yy=y; for(let i=0;i<words.length;i++){ const test=line+words[i]+' '; if(ctx.measureText(test).width>w){ ctx.fillText(line,x,yy); line=words[i]+' '; yy+=l; } else line=test; } ctx.fillText(line,x,yy); }
 
 // ====== Scenes ======
 let slowFrames=0;
 const SCENES=[
   { // 0 갈등
-    run(){ energy=lerp(energy,25,.03); shake=1; draw(false,.14,0); caption('Cell 주니어들의 맹공으로 Z전사들은 쓰러진다. 손오반은 무력함에 괴로워한다.'); }
+    run(){ energy=lerp(energy,25,.03); shake=1; draw(false,.14,0);  }
   },
   { // 1 16호의 말
-    run(){ energy=lerp(energy,45,.03); shake=2; draw(false,.18,0); caption('Android 16: “정의를 위해 싸우는 것은 죄가 아니다… 마음의 울분을 풀어라.”'); }
+    run(){ energy=lerp(energy,45,.03); shake=2; draw(false,.18,0);  }
   },
   { // 2 16호의 희생
-    run(){ energy=lerp(energy,65,.04); shake=4; draw(false,.22,0); lightning(1.2); caption('완전체 셀의 발아래서 16호는 산산이 부서진다. 분노가 폭발한다.'); }
+    run(){ energy=lerp(energy,65,.04); shake=4; draw(false,.22,0); lightning(1.2);  }
   },
   { // 3 변신 개시
-    run(){ energy=lerp(energy,95,.05); shake=6; draw(false,.28,1); lightning(2); caption('“16호… 넌 생명을 사랑했지.” 숨겨진 힘이 터져 나온다.'); }
+    run(){ energy=lerp(energy,95,.05); shake=6; draw(false,.28,1); lightning(2);  }
   },
   { // 4 SSJ2 완료
-    run(){ awakened=true; energy=100; shake=8; draw(true,.38,2); lightning(3); caption('초사이어인 2. 황금빛 오라와 번개가 전장을 뒤덮는다.'); }
+    run(){ awakened=true; energy=100; shake=8; draw(true,.38,2); lightning(3);  }
   },
   { // 5 참수 (슬로우 프레임)
     run(){
@@ -131,7 +130,7 @@ const SCENES=[
       shake=7; draw(true,.36,2); lightning(2.8);
       ctx.save(); ctx.strokeStyle='rgba(255,255,255,.95)'; ctx.lineWidth=3;
       ctx.beginPath(); ctx.moveTo(cx()-140, cy()-98); ctx.lineTo(cx()+140, cy()-52); ctx.stroke(); ctx.restore();
-      caption('칼 같은 기공파가 스친다.'); }
+       }
   },
   { // 6 결과 암시 (두개골 비폭력 표현)
     run(){ shake=2; draw(true,.32,2);
@@ -142,10 +141,10 @@ const SCENES=[
       // 몸통 잔상
       ctx.fillRect(cx()-18, cy()-36, 36, 44);
       ctx.restore();
-      caption('몸은 두 조각의 잔상으로 갈라지고, 곧 에너지 입자로 사라진다.'); }
+       }
   },
   { // 7 연속 격파 & 반응
-    run(){ shake=4; draw(true,.30,2); lightning(2.2); caption('남은 Cell 주니어들은 순식간에 쓰러진다. 전장은 침묵에 잠긴다.'); }
+    run(){ shake=4; draw(true,.30,2); lightning(2.2);  }
   }
 ];
 
