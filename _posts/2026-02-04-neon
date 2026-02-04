@@ -1,0 +1,191 @@
+---
+layout: post
+title: Neon Arena
+---
+
+<style>
+:root{
+  --ui-bg: rgba(0,0,0,0.6);
+  --accent: #00f5a0;
+  --muted: rgba(255,255,255,0.75);
+  --glass: rgba(255,255,255,0.04);
+}
+body{
+  margin:0;
+  font-family: system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans KR","Helvetica Neue",Arial;
+  background:#071017;
+  color:#fff;
+}
+.article-inner{max-width:980px;margin:28px auto;padding:12px}
+.header{text-align:center;margin-bottom:10px}
+.header h1{margin:6px 0;font-size:20px;letter-spacing:.06em;color:var(--muted)}
+.lead{color:#9fb3bd;font-size:13px;margin-bottom:18px}
+
+.board{position:relative;margin:0 auto 22px;width:100%;max-width:960px;touch-action:none}
+canvas{
+  display:block;width:100%;height:auto;border-radius:10px;
+  background:linear-gradient(180deg,#071021 0%,#051018 60%);
+  box-shadow:0 6px 26px rgba(0,0,0,.6) inset,0 8px 30px rgba(2,6,8,.6)
+}
+
+.hud{position:absolute;left:12px;top:12px;display:flex;gap:12px}
+.hud .pill{
+  background:var(--glass);padding:8px 10px;border-radius:10px;
+  font-size:13px;color:var(--muted)
+}
+
+.controls{position:absolute;right:12px;bottom:12px;display:flex;gap:10px}
+.btn{
+  background:var(--ui-bg);border-radius:10px;padding:8px 10px;
+  color:var(--muted);font-weight:600;font-size:13px;
+  user-select:none;-webkit-tap-highlight-color:transparent
+}
+
+.overlay{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  background:rgba(0,0,0,.55);padding:18px 20px;border-radius:12px;
+  text-align:center;max-width:84%
+}
+.overlay h2{margin:0 0 8px;font-size:18px;color:var(--muted)}
+.overlay p{margin:6px 0 12px;font-size:13px;color:#b7d6cf}
+.overlay .cta{
+  background:var(--accent);color:#001;padding:10px 14px;
+  border-radius:10px;font-weight:700;cursor:pointer;display:inline-block
+}
+</style>
+
+<div class="article-inner">
+  <div class="header">
+    <h1>Neon Arena</h1>
+    <div class="lead">
+      Top-down survival · 이동: 방향키/WASD · 공격: 클릭/탭
+    </div>
+  </div>
+
+  <div class="board" id="board">
+    <canvas id="game" width="960" height="600"></canvas>
+
+    <div class="hud">
+      <div class="pill">HP <strong id="hp">100</strong></div>
+      <div class="pill">Score <strong id="score">0</strong></div>
+      <div class="pill">Wave <strong id="wave">1</strong></div>
+    </div>
+
+    <div class="controls">
+      <div class="btn" id="pause">Pause</div>
+      <div class="btn" id="sound">Sound</div>
+    </div>
+
+    <div class="overlay" id="overlay">
+      <h2>NEON ARENA</h2>
+      <p>살아남아 웨이브를 넘기세요.</p>
+      <div class="cta" id="start">START</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const DPR = Math.min(window.devicePixelRatio||1,2);
+
+function resize(){
+  const w = Math.min(innerWidth-40,960);
+  const h = w*600/960;
+  canvas.style.width=w+'px';
+  canvas.style.height=h+'px';
+  canvas.width=w*DPR;
+  canvas.height=h*DPR;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+addEventListener('resize',resize); resize();
+
+/* ===== GAME STATE ===== */
+let running=false;
+let hp=100, score=0, wave=1;
+let enemies=[], particles=[];
+const cx=()=>canvas.width/DPR/2, cy=()=>canvas.height/DPR/2;
+
+/* ===== INPUT ===== */
+const keys={};
+addEventListener('keydown',e=>keys[e.key]=true);
+addEventListener('keyup',e=>keys[e.key]=false);
+canvas.addEventListener('pointerdown',()=>attack());
+
+/* ===== UI ===== */
+const hpEl=hp,scoreEl=document.getElementById('score'),waveEl=document.getElementById('wave');
+document.getElementById('start').onclick=()=>start();
+document.getElementById('pause').onclick=()=>running=!running;
+
+/* ===== HELPERS ===== */
+const rnd=(a,b)=>Math.random()*(b-a)+a;
+
+/* ===== ENEMY ===== */
+class Enemy{
+  constructor(){
+    const a=Math.random()*Math.PI*2;
+    const r=rnd(180,300);
+    this.x=cx()+Math.cos(a)*r;
+    this.y=cy()+Math.sin(a)*r;
+    this.hp=20+wave*4;
+  }
+  update(){
+    const dx=cx()-this.x,dy=cy()-this.y;
+    const d=Math.hypot(dx,dy);
+    this.x+=dx/d*0.6;
+    this.y+=dy/d*0.6;
+    if(d<18){hp-=1;}
+  }
+  draw(){
+    ctx.fillStyle='#ff5577';
+    ctx.beginPath();ctx.arc(this.x,this.y,12,0,Math.PI*2);ctx.fill();
+  }
+}
+
+/* ===== GAME LOGIC ===== */
+function spawnWave(){
+  for(let i=0;i<3+wave;i++) enemies.push(new Enemy());
+}
+
+function attack(){
+  if(!running) return;
+  enemies=enemies.filter(e=>{
+    const d=Math.hypot(e.x-cx(),e.y-cy());
+    if(d<70){score+=5;return false;}
+    return true;
+  });
+}
+
+function update(){
+  if(!running) return;
+  enemies.forEach(e=>e.update());
+  if(enemies.length===0){wave++;spawnWave();}
+}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle='#071017';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  enemies.forEach(e=>e.draw());
+
+  ctx.fillStyle='#00f5a0';
+  ctx.beginPath();ctx.arc(cx(),cy(),12,0,Math.PI*2);ctx.fill();
+
+  document.getElementById('hp').textContent=hp;
+  scoreEl.textContent=score;
+  waveEl.textContent=wave;
+}
+
+function loop(){
+  update(); draw();
+  requestAnimationFrame(loop);
+}
+
+function start(){
+  document.getElementById('overlay').style.display='none';
+  hp=100;score=0;wave=1;enemies=[];
+  spawnWave();
+  running=true;
+}
+loop();
+</script>
