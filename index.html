@@ -2,76 +2,164 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>SSJ2 Awakening – Fan Mini Game (High Detail)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>각성</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <style>
-    html, body { margin:0; padding:0; background:#000; color:#fff; font-family: system-ui, -apple-system, sans-serif; }
-    canvas { display:block; }
-    #ui { position:fixed; left:0; right:0; bottom:0; padding:12px; display:flex; gap:12px; align-items:center; background:rgba(0,0,0,.6)}
-    button { background:#ffd700; border:0; padding:10px 14px; font-weight:800; cursor:pointer }
-    #hint { opacity:.85; font-size:14px }
+    html,body{margin:0;padding:0;background:#000;color:#fff;font-family:system-ui,-apple-system,sans-serif;touch-action:manipulation}
+    canvas{display:block}
+    #ui{position:fixed;left:0;right:0;bottom:0;padding:10px 12px;background:linear-gradient(transparent,rgba(0,0,0,.75));display:flex;gap:10px;align-items:center}
+    #hint{opacity:.85;font-size:13px}
   </style>
 </head>
 <body>
 <canvas id="game"></canvas>
-<div id="ui">
-  <button id="power">각성</button>
-  <div id="hint">스페이스바 / 버튼 연타 → 분노 폭주</div>
-</div>
+<div id="ui"><div id="hint">화면 아무 곳이나 탭하여 진행</div></div>
 <script>
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-function resize(){ canvas.width=innerWidth; canvas.height=innerHeight } addEventListener('resize',resize); resize();
+// ====== Mobile-first Canvas Setup ======
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+function resize(){canvas.width=innerWidth;canvas.height=innerHeight}addEventListener('resize',resize);resize();
 
-let energy=0, awakened=false, shake=0, t=0;
-const cx=()=>canvas.width/2, cy=()=>canvas.height*0.68;
+// ====== Global State ======
+let scene=0, t=0, shake=0;
+let energy=0, awakened=false;
+const SCALE=1.35;              // 더 큰 클로즈업
+const cx=()=>canvas.width/2;   // 중앙 유지
+const cy=()=>canvas.height*0.76; // 하단 배치
 
-function addEnergy(){ if(awakened) return; energy=Math.min(100, energy+4); if(energy>=100) awakened=true; }
-document.getElementById('power').onclick=addEnergy;
-// 모바일 터치 입력
-canvas.addEventListener('touchstart', e => { e.preventDefault(); addEnergy(); }, { passive:false });
-addEventListener('keydown',e=>{ if(e.code==='Space') addEnergy(); });
+// ====== Utilities ======
+function vibrate(p){ if(navigator.vibrate) navigator.vibrate(p); }
+function lerp(a,b,k){ return a+(b-a)*k; }
 
+// ====== Input (Anywhere Click / Tap) ======
+function next(){ scene=Math.min(scene+1, SCENES.length-1); t=0; vibrate(scene===4?[120,40,120,40,180]:25); }
+canvas.addEventListener('touchstart',e=>{e.preventDefault();next();},{passive:false});
+canvas.addEventListener('click',()=>next());
+
+// ====== Background & Effects ======
 function bg(){ const g=ctx.createLinearGradient(0,0,0,canvas.height); g.addColorStop(0,'#0a0b1c'); g.addColorStop(1,'#000'); ctx.fillStyle=g; ctx.fillRect(0,0,canvas.width,canvas.height); }
+function lightning(intensity=1){ ctx.strokeStyle='rgba(200,220,255,.95)'; ctx.lineWidth=2; const n=Math.ceil(intensity*3); for(let k=0;k<n;k++){ ctx.beginPath(); let x=cx()+Math.sin(t*2+k)*120,y=0; ctx.moveTo(x,y); while(y<canvas.height){ x+=(Math.random()-.5)*50; y+=Math.random()*45+25; ctx.lineTo(x,y);} ctx.stroke(); } }
+function aura(r,alpha){ ctx.beginPath(); ctx.arc(cx(),cy(),r+(Math.sin(t*2)*10),0,Math.PI*2); ctx.fillStyle=`rgba(255,215,0,${alpha})`; ctx.fill(); }
 
-function lightning(){ if(!awakened && energy<55) return; ctx.strokeStyle='rgba(200,220,255,.95)'; ctx.lineWidth=2; for(let k=0;k<(awakened?3:1);k++){ ctx.beginPath(); let x=cx()+Math.sin(t*1.7+k)*120, y=0; ctx.moveTo(x,y); while(y<canvas.height){ x+= (Math.random()-.5)*50; y+= Math.random()*45+25; ctx.lineTo(x,y);} ctx.stroke(); }}
-
-function aura(){ const r=(awakened?140:70+energy*0.9)+(Math.sin(t*2)*10); ctx.beginPath(); ctx.arc(cx(),cy(),r,0,Math.PI*2); ctx.fillStyle=awakened?'rgba(255,215,0,.38)':'rgba(255,255,255,.18)'; ctx.fill(); }
-
-function drawGi(){ // 상의(보라), 허리띠(파랑)
-  ctx.fillStyle='#5a2c83'; ctx.fillRect(cx()-26, cy()-86, 52, 56);
-  ctx.fillStyle='#2c6fd6'; ctx.fillRect(cx()-28, cy()-34, 56, 10);
+// ====== Character: Clothing (Gohan Gi) ======
+function drawGi(){
+  // 상의 (보라)
+  ctx.fillStyle='#5a2c83';
+  ctx.fillRect(cx()-30, cy()-96, 60, 62);
+  // 허리띠 (파랑)
+  ctx.fillStyle='#2c6fd6';
+  ctx.fillRect(cx()-34, cy()-34, 68, 12);
   // 하의
-  ctx.fillStyle='#5a2c83'; ctx.fillRect(cx()-24, cy()-24, 18, 36); ctx.fillRect(cx()+6, cy()-24, 18, 36);
+  ctx.fillStyle='#5a2c83';
+  ctx.fillRect(cx()-28, cy()-22, 22, 42);
+  ctx.fillRect(cx()+6,  cy()-22, 22, 42);
   // 부츠
-  ctx.fillStyle='#e0c28b'; ctx.fillRect(cx()-26, cy()+12, 22, 10); ctx.fillRect(cx()+4, cy()+12, 22, 10);
-  ctx.fillStyle='#1f4fb8'; ctx.fillRect(cx()-26, cy()+22, 22, 8); ctx.fillRect(cx()+4, cy()+22, 22, 8);
+  ctx.fillStyle='#e0c28b';
+  ctx.fillRect(cx()-30, cy()+18, 26, 12);
+  ctx.fillRect(cx()+4,  cy()+18, 26, 12);
+  ctx.fillStyle='#1f4fb8';
+  ctx.fillRect(cx()-30, cy()+30, 26, 8);
+  ctx.fillRect(cx()+4,  cy()+30, 26, 8);
 }
 
-function head(){ // 얼굴
-  ctx.beginPath(); ctx.arc(cx(), cy()-98, 20, 0, Math.PI*2); ctx.fillStyle='#f1c27d'; ctx.fill();
-  // 눈썹(분노)
-  ctx.strokeStyle='#000'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(cx()-10, cy()-103); ctx.lineTo(cx()-2, cy()-105); ctx.moveTo(cx()+2, cy()-105); ctx.lineTo(cx()+10, cy()-103); ctx.stroke();
+// ====== Character: Head (Classic anime style – cleaner & sharper) ======
+function head(anger=0){
+  // 얼굴 베이스 (둥근 애니 비율)
+  ctx.beginPath();
+  ctx.ellipse(cx(), cy()-108, 18, 22, 0, 0, Math.PI*2);
+  ctx.fillStyle='#f1c27d'; ctx.fill();
+
+  // 눈썹 (SSJ2 각진 인상)
+  ctx.strokeStyle='#000'; ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(cx()-10, cy()-116-anger); ctx.lineTo(cx()-2, cy()-118-anger);
+  ctx.moveTo(cx()+2,  cy()-118-anger); ctx.lineTo(cx()+10, cy()-116-anger);
+  ctx.stroke();
+
   // 눈
-  ctx.fillStyle='#000'; ctx.fillRect(cx()-7, cy()-97, 3, 3); ctx.fillRect(cx()+4, cy()-97, 3, 3);
-  // 입
-  ctx.strokeStyle='#000'; ctx.beginPath(); ctx.moveTo(cx()-5, cy()-90); ctx.lineTo(cx()+5, cy()-90); ctx.stroke();
+  ctx.fillStyle='#000';
+  ctx.fillRect(cx()-7, cy()-108, 3, 3);
+  ctx.fillRect(cx()+4, cy()-108, 3, 3);
+
+  // 입 (결연한 일자)
+  ctx.beginPath(); ctx.moveTo(cx()-5, cy()-98); ctx.lineTo(cx()+5, cy()-98); ctx.stroke();
 }
 
-function hair(){ // SSJ2 특유의 날카로운 스파이크 + 번개 느낌
-  ctx.fillStyle=awakened?'#ffd700':'#111';
-  const baseY=cy()-118;
-  const spikes=[[-26,baseY+18,-6,baseY-30,6,baseY+18],[-10,baseY+16,0,baseY-40,10,baseY+16],[6,baseY+18,26,baseY-26,40,baseY+20]];
-  spikes.forEach(s=>{ ctx.beginPath(); ctx.moveTo(cx()+s[0],s[1]); ctx.lineTo(cx()+s[2],s[3]); ctx.lineTo(cx()+s[4],s[5]); ctx.closePath(); ctx.fill(); });
+// ====== Character: Hair (Classic SSJ2 silhouette) ======
+function hair(ssj2=false){
+  ctx.fillStyle=ssj2?'#ffd700':'#111';
+  const by=cy()-138;
+  const spikes=[
+    [-26,by+28,-8, by-34,  6, by+26],
+    [-10,by+26,  0, by-60, 10, by+26],
+    [  8,by+26, 22, by-42, 34, by+30]
+  ];
+  spikes.forEach(s=>{
+    ctx.beginPath();
+    ctx.moveTo(cx()+s[0],s[1]);
+    ctx.lineTo(cx()+s[2],s[3]);
+    ctx.lineTo(cx()+s[4],s[5]);
+    ctx.closePath(); ctx.fill();
+  });
 }
 
-function gauge(){ const w=260,h=14,x=cx()-w/2,y=36; ctx.strokeStyle='#fff'; ctx.strokeRect(x,y,w,h); ctx.fillStyle='#ffd700'; ctx.fillRect(x,y,w*(energy/100),h); ctx.fillStyle='#fff'; ctx.font='16px sans-serif'; ctx.textAlign='center'; ctx.fillText(awakened?'초사이언2 각성':'분노 게이지',cx(),y-8); }
+// ====== Captions ======
+function caption(text){ ctx.save(); ctx.globalAlpha=.94; ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fillRect(0, canvas.height-130, canvas.width, 130); ctx.fillStyle='#fff'; ctx.font='15px system-ui'; ctx.textAlign='center'; wrap(text, canvas.width/2, canvas.height-92, canvas.width-40, 22); ctx.restore(); }
+function wrap(text,x,y,w,l){ const words=text.split(' '); let line=''; let yy=y; for(let i=0;i<words.length;i++){ const test=line+words[i]+' '; if(ctx.measureText(test).width>w){ ctx.fillText(line,x,yy); line=words[i]+' '; yy+=l; } else line=test; } ctx.fillText(line,x,yy); }
 
-function update(){ t+=0.016; shake=awakened?7:(energy>60?3:0); }
+// ====== Scenes ======
+let slowFrames=0;
+const SCENES=[
+  { // 0 갈등
+    run(){ energy=lerp(energy,25,.03); shake=1; draw(false,.14,0); caption('Cell 주니어들의 맹공으로 Z전사들은 쓰러진다. 손오반은 무력함에 괴로워한다.'); }
+  },
+  { // 1 16호의 말
+    run(){ energy=lerp(energy,45,.03); shake=2; draw(false,.18,0); caption('Android 16: “정의를 위해 싸우는 것은 죄가 아니다… 마음의 울분을 풀어라.”'); }
+  },
+  { // 2 16호의 희생
+    run(){ energy=lerp(energy,65,.04); shake=4; draw(false,.22,0); lightning(1.2); caption('완전체 셀의 발아래서 16호는 산산이 부서진다. 분노가 폭발한다.'); }
+  },
+  { // 3 변신 개시
+    run(){ energy=lerp(energy,95,.05); shake=6; draw(false,.28,1); lightning(2); caption('“16호… 넌 생명을 사랑했지.” 숨겨진 힘이 터져 나온다.'); }
+  },
+  { // 4 SSJ2 완료
+    run(){ awakened=true; energy=100; shake=8; draw(true,.38,2); lightning(3); caption('초사이어인 2. 황금빛 오라와 번개가 전장을 뒤덮는다.'); }
+  },
+  { // 5 참수 (슬로우 프레임)
+    run(){
+      slowFrames=5; // 3~5프레임 슬로우
+      shake=7; draw(true,.36,2); lightning(2.8);
+      ctx.save(); ctx.strokeStyle='rgba(255,255,255,.95)'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(cx()-140, cy()-98); ctx.lineTo(cx()+140, cy()-52); ctx.stroke(); ctx.restore();
+      caption('칼 같은 기공파가 스친다.'); }
+  },
+  { // 6 결과 암시 (두개골 비폭력 표현)
+    run(){ shake=2; draw(true,.32,2);
+      // 상·하 실루엣 분리 잔상 (사람 머리 형태 암시)
+      ctx.save(); ctx.globalAlpha=.6; ctx.fillStyle='rgba(120,160,120,.6)';
+      // 머리 형태 타원 잔상
+      ctx.beginPath(); ctx.ellipse(cx()-6, cy()-104, 14, 16, 0, 0, Math.PI*2); ctx.fill();
+      // 몸통 잔상
+      ctx.fillRect(cx()-18, cy()-36, 36, 44);
+      ctx.restore();
+      caption('몸은 두 조각의 잔상으로 갈라지고, 곧 에너지 입자로 사라진다.'); }
+  },
+  { // 7 연속 격파 & 반응
+    run(){ shake=4; draw(true,.30,2); lightning(2.2); caption('남은 Cell 주니어들은 순식간에 쓰러진다. 전장은 침묵에 잠긴다.'); }
+  }
+];
 
-function render(){ ctx.save(); if(shake) ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake); bg(); lightning(); aura(); drawGi(); head(); hair(); ctx.restore(); gauge(); }
+// ====== Draw ======
+function draw(ssj2, auraAlpha, anger){ ctx.save(); ctx.scale(SCALE,SCALE); if(shake) ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake); bg(); if(ssj2) aura(160,auraAlpha); drawGi(); head(anger); hair(ssj2); ctx.restore(); }
 
-(function loop(){ update(); render(); requestAnimationFrame(loop); })();
+// ====== Loop ======
+(function loop(){
+  if(slowFrames>0){ slowFrames--; setTimeout(loop,40); return; }
+  t+=0.016;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  SCENES[scene].run();
+  requestAnimationFrame(loop);
+})();
 </script>
 </body>
 </html>
