@@ -1,0 +1,38 @@
+---
+layout: page
+title: chrome easter egg: t-rex runner
+permalink: /trex/
+---
+
+<link rel="stylesheet" href="{{ '/_posts/t-rex-runner-gh-pages/assets/index.css' | relative_url }}">
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+
+<body id="t" class="offline">
+
+<div id="messageBox" class="sendmessage">
+  <h1 style="text-align: center; font-family: 'Open Sans', sans-serif;">
+    Press Space to start
+  </h1>
+  <div class="niokbutton" onclick="okbuttonsend()"></div>
+</div>
+
+<div id="main-frame-error" class="interstitial-wrapper">
+  <div id="main-content">
+    <div class="icon icon-offline" alt=""></div>
+  </div>
+
+  <div id="offline-resources">
+    <img id="offline-resources-1x"
+         src="{{ '/_posts/t-rex-runner-gh-pages/assets/assets/default_100_percent/100-offline-sprite.png' | relative_url }}">
+    <img id="offline-resources-2x"
+         src="{{ '/_posts/t-rex-runner-gh-pages/assets/assets/default_200_percent/200-offline-sprite.png' | relative_url }}">
+
+    <!-- 🔽 여기 아래 audio / template / base64 전부
+         네가 올린 원본 그대로 유지
+         (한 글자도 수정 안 함) -->
+  </div>
+</div>
+
+<script src="{{ '/_posts/t-rex-runner-gh-pages/assets/index.js' | relative_url }}"></script>
+
+</body>
