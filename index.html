@@ -19,7 +19,7 @@ html, body {
   height: 100%;
 }
 
-/* ===== 무조건 정중앙 스테이지 ===== */
+/* ===== 정중앙 스테이지 ===== */
 #book-stage {
   position: fixed;
   top: 50%;
@@ -108,19 +108,15 @@ html, body {
 }
 
 /* ===== 사진 ===== */
-input[type=file] {
-  margin-bottom: 10px;
-}
-
 .photos {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
 .photos img {
-  width: 120px;
-  height: 90px;
+  width: 180px;
+  height: 130px;
   object-fit: cover;
   border: 1px solid #b6a999;
 }
@@ -167,7 +163,19 @@ const data = [
     name: "참새",
     sci: "Passer montanus",
     unlocked: true,
-    desc: "대한민국 전역에서 가장 흔히 관찰되는 소형 조류."
+    desc: `
+참새는 대한민국 전역에서 가장 흔하게 관찰되는 소형 조류로,
+사람의 거주지와 매우 가까운 환경에서 살아간다.
+
+몸길이는 약 14cm 내외이며, 머리 옆의 검은 반점과
+갈색과 회색이 섞인 깃털이 특징이다.
+
+주로 곡식의 씨앗이나 작은 곤충을 먹으며,
+짹짹거리는 울음소리를 자주 낸다.
+
+도시, 농촌, 공원, 학교 주변 등
+사람이 있는 곳 어디서든 관찰할 수 있다.
+`
   },
   {
     id: "crow",
@@ -236,7 +244,23 @@ function makePage(d, side) {
   } else {
     if (!d.unlocked) {
       p.innerHTML = `<div class="locked"><span>🔒</span>미발견</div>`;
-    } else {
+    }
+    else if (d.id === "sparrow") {
+      p.innerHTML = `
+        <div class="photos">
+          <img src="assets/images/b1.jpg" alt="참새 백과사전 사진">
+          <img src="assets/images/b2.jpg" alt="내가 찍은 참새 사진">
+        </div>
+
+        <div class="desc" style="margin-top:12px;">
+          🔊 울음소리<br>
+          <audio controls style="width:100%; margin-top:6px;">
+            <source src="https://upload.wikimedia.org/wikipedia/commons/4/45/Tree_Sparrow_%28Passer_montanus%29_call.ogg" type="audio/ogg">
+          </audio>
+        </div>
+      `;
+    }
+    else {
       const imgs = photos(d.id);
       p.innerHTML = `<input type="file" accept="image/*"><div class="photos"></div>`;
       const grid = p.querySelector(".photos");
