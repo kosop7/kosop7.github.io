@@ -203,7 +203,7 @@ function makePage(d, side) {
 
   if (d.type === "cover") {
     p.classList.add("cover");
-    p.innerHTML = "<h1>새 도감</h1><p>나만의 기록형 도감</p>";
+    p.innerHTML = "<h1>새 도감</h1><p>kosop</p>";
     return p;
   }
 
@@ -226,7 +226,7 @@ function makePage(d, side) {
     } else {
       /* ✅ 오른쪽 페이지: 관찰 사진 단독, 가로 100% */
       p.innerHTML = `
-        <img src="assets/images/b2.jpg" alt="관찰 사진" class="photo-full">
+        <img src="assets/images/b2.jpg" class="photo-full">
       `;
     }
   }
