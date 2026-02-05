@@ -1,255 +1,156 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>SSJ2 Handoban Ultimate</title>
+<meta charset="UTF-8" />
+<title>SSJ2 Handoban Ultimate – Mobile</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
 <style>
-html,body{margin:0;padding:0;background:#000;overflow:hidden}
+html,body{margin:0;padding:0;background:#000;color:#fff;font-family:system-ui,-apple-system,sans-serif;touch-action:manipulation}
 canvas{display:block}
-#dialogue{
-  position:fixed;
-  left:50%;
-  bottom:4%;
-  transform:translateX(-50%);
-  width:90%;
-  max-width:560px;
-  background:rgba(0,0,0,0.85);
-  color:#fff;
-  padding:18px;
-  border:2px solid #fff;
-  font-size:18px;
-  line-height:1.5;
-  white-space:pre-line;
-  font-family:monospace;
-}
+#ui{position:fixed;left:0;right:0;bottom:0;padding:10px 12px;background:linear-gradient(transparent,rgba(0,0,0,.75));display:flex;gap:10px;align-items:center}
+#hint{opacity:.85;font-size:13px}
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
-<div id="dialogue"></div>
+<canvas id="game"></canvas>
+<div id="ui"><div id="hint">화면 아무 곳이나 탭하여 진행</div></div>
 <script>
-const canvas = c;
-const ctx = canvas.getContext('2d');
-const dlg = document.getElementById('dialogue');
+// ====== Canvas Setup ======
+const canvas=document.getElementById('game');
+const ctx=canvas.getContext('2d');
+function resize(){canvas.width=innerWidth;canvas.height=innerHeight;}addEventListener('resize',resize);resize();
 
-function resize(){canvas.width=innerWidth; canvas.height=innerHeight;}
-addEventListener('resize', resize);
-resize();
+// ====== Global State ======
+let scene=0,t=0,shake=0;
+let energy=0,awakened=false;
+const SCALE=1.35;
+const cx=()=>canvas.width/2;
+const cy=()=>canvas.height*0.76;
 
-let camera = {zoom:1, shake:0};
-let flags = {sky:'dark', ssj2:false, lightning:false, bird:false, dust:false};
+// ====== Utilities ======
+function vibrate(p){ if(navigator.vibrate) navigator.vibrate(p); }
+function lerp(a,b,k){ return a+(b-a)*k; }
 
-// 먼지 입체
-let dusts = [];
-for(let i=0;i<60;i++){
-  dusts.push({x:Math.random()*innerWidth, y:Math.random()*innerHeight, r:Math.random()*5+2, dx:Math.random()*2-1, dy:Math.random()*2-1, alpha:Math.random()*0.5+0.2});
+// ====== Input ======
+function next(){ scene=Math.min(scene+1, SCENES.length-1); t=0; vibrate(scene===4?[120,40,120,40,180]:25); }
+canvas.addEventListener('touchstart',e=>{e.preventDefault();next();},{passive:false});
+canvas.addEventListener('click',()=>next());
+
+// ====== Background & Effects ======
+function bg(){ const g=ctx.createLinearGradient(0,0,0,canvas.height); g.addColorStop(0,flags.sky==='red'?'#800000':'#0a0b1c'); g.addColorStop(1,flags.sky==='red'?'#400000':'#000'); ctx.fillStyle=g; ctx.fillRect(0,0,canvas.width,canvas.height); }
+function lightning(intensity=1){ ctx.strokeStyle='rgba(200,220,255,.95)'; ctx.lineWidth=2; const n=Math.ceil(intensity*3); for(let k=0;k<n;k++){ ctx.beginPath(); let x=cx()+Math.sin(t*2+k)*120,y=0; ctx.moveTo(x,y); while(y<canvas.height){ x+=(Math.random()-.5)*50; y+=Math.random()*45+25; ctx.lineTo(x,y);} ctx.stroke(); } }
+function aura(r,alpha){ ctx.beginPath(); ctx.arc(cx(),cy(),r+(Math.sin(t*2)*10),0,Math.PI*2); ctx.fillStyle=`rgba(255,215,0,${alpha})`; ctx.fill(); }
+
+// ====== Character: Clothing (Gohan Gi) ======
+function drawGi(){
+  ctx.fillStyle='#5a2c83'; ctx.fillRect(cx()-30, cy()-96, 60, 62);
+  ctx.fillStyle='#2c6fd6'; ctx.fillRect(cx()-34, cy()-34, 68, 12);
+  ctx.fillStyle='#5a2c83'; ctx.fillRect(cx()-28, cy()-22, 22, 42);
+  ctx.fillRect(cx()+6,  cy()-22, 22, 42);
+  ctx.fillStyle='#e0c28b'; ctx.fillRect(cx()-30, cy()+18, 26, 12);
+  ctx.fillRect(cx()+4,  cy()+18, 26, 12);
+  ctx.fillStyle='#1f4fb8'; ctx.fillRect(cx()-30, cy()+30, 26, 8);
+  ctx.fillRect(cx()+4,  cy()+30, 26, 8);
 }
 
-// 흰 새
-let birdY = 0, birdDir = 1, birdWing = 0;
-
-// 씬별 타이머
-let animTimeout;
-
-function cx(){return canvas.width/2;}
-function cy(){return canvas.height/2;}
-
-// BACKGROUND
-function background(){
-  let grd = ctx.createLinearGradient(0,0,0,canvas.height);
-  grd.addColorStop(0, flags.sky==='red'?'#800000':'#111');
-  grd.addColorStop(1, flags.sky==='red'?'#400000':'#111');
-  ctx.fillStyle = grd;
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-}
-
-// DUST
-function dust(){
-  if(!flags.dust) return;
-  for(let d of dusts){
-    ctx.fillStyle='rgba(150,100,50,'+d.alpha+')';
-    ctx.beginPath();
-    ctx.arc(d.x,d.y,d.r,0,Math.PI*2);
-    ctx.fill();
-    d.x += d.dx;
-    d.y += d.dy;
-    if(d.x<0)d.x=canvas.width;
-    if(d.x>canvas.width)d.x=0;
-    if(d.y<0)d.y=canvas.height;
-    if(d.y>canvas.height)d.y=0;
-  }
-}
-
-// ANDROID16
-function android16(){
-  ctx.fillStyle='#9aa36a';
-  ctx.beginPath(); ctx.ellipse(cx()-150,cy(),42,48,0,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#ff7a18'; ctx.fillRect(cx()-196,cy()-68,92,26);
-  ctx.strokeStyle='red';
-  ctx.beginPath(); ctx.moveTo(cx()-170,cy()-20); ctx.lineTo(cx()-130,cy()+20); ctx.stroke();
-}
-
-// CELL
-function cell(){
-  ctx.fillStyle='#1c6';
-  ctx.beginPath(); ctx.ellipse(cx()+180,cy()-20,50,80,0,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#000';
-  ctx.beginPath(); ctx.moveTo(cx()+150,cy()-110); ctx.lineTo(cx()+210,cy()-110); ctx.lineTo(cx()+180,cy()-180); ctx.fill();
-  ctx.strokeStyle='#1c6'; ctx.lineWidth=6;
-  ctx.beginPath(); ctx.moveTo(cx()+180,cy()+50); ctx.lineTo(cx()+220,cy()+120); ctx.stroke();
-}
-
-// 손오반
-function gohan(){
-  // 몸체
-  ctx.fillStyle='#5a2c83';
-  ctx.fillRect(cx()-28,cy()-10,56,70);
-  ctx.fillStyle='#2c6fd6';
-  ctx.fillRect(cx()-30,cy()+28,60,10);
-
-  // 얼굴 윤곽
-  ctx.fillStyle='#f1c27d';
+// ====== Character: Head (Face + Eyes + Nose + Mouth + Eyebrows + Blood) ======
+function head(anger=0,ssj2=false){
+  // 얼굴
   ctx.beginPath();
-  ctx.ellipse(cx(),cy()-46,18,22,0,0,Math.PI*2);
-  ctx.fill();
+  ctx.ellipse(cx(), cy()-108, 18, 22, 0, 0, Math.PI*2);
+  ctx.fillStyle='#f1c27d'; ctx.fill();
 
-  // 눈
-  ctx.fillStyle= flags.ssj2?'#00f':'#000';
-  ctx.beginPath(); ctx.ellipse(cx()-6,cy()-48,3,4,0,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(cx()+6,cy()-48,3,4,0,0,Math.PI*2); ctx.fill();
-  // 눈동자
+  // 눈썹
+  ctx.strokeStyle='#000'; ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(cx()-10, cy()-116-anger); ctx.lineTo(cx()-2, cy()-118-anger);
+  ctx.moveTo(cx()+2, cy()-118-anger); ctx.lineTo(cx()+10, cy()-116-anger);
+  ctx.stroke();
+
+  // 눈 흰자+홍채+동공
+  ctx.fillStyle= ssj2?'#00f':'#000';
+  ctx.beginPath(); ctx.ellipse(cx()-6,cy()-108,3,4,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx()+6,cy()-108,3,4,0,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='#fff';
-  ctx.beginPath(); ctx.arc(cx()-6,cy()-48,1.5,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(cx()+6,cy()-48,1.5,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx()-6,cy()-108,1.5,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx()+6,cy()-108,1.5,0,Math.PI*2); ctx.fill();
+
   // 눈물
   ctx.strokeStyle='rgba(0,150,255,0.8)';
-  ctx.beginPath(); ctx.moveTo(cx()-6,cy()-44); ctx.lineTo(cx()-6,cy()-38); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(cx()+6,cy()-44); ctx.lineTo(cx()+6,cy()-38); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx()-6,cy()-104); ctx.lineTo(cx()-6,cy()-98); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx()+6,cy()-104); ctx.lineTo(cx()+6,cy()-98); ctx.stroke();
 
   // 코
   ctx.strokeStyle='#e0b080';
-  ctx.beginPath(); ctx.moveTo(cx(),cy()-46); ctx.lineTo(cx(),cy()-42); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx(),cy()-106); ctx.lineTo(cx(),cy()-102); ctx.stroke();
 
   // 입
   ctx.strokeStyle='#900';
-  ctx.beginPath(); ctx.moveTo(cx()-5,cy()-34); ctx.quadraticCurveTo(cx(),cy()-32,cx()+5,cy()-34); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx()-5, cy()-96); ctx.lineTo(cx()+5, cy()-96); ctx.stroke();
 
   // 혈흔
-  ctx.strokeStyle='red';
-  ctx.beginPath(); ctx.moveTo(cx()-4,cy()-58); ctx.lineTo(cx()-6,cy()-46); ctx.stroke();
-
-  // 머리카락
-  ctx.fillStyle= flags.ssj2 ? '#ffd94a' : '#f5d76e';
-  for(let i=-2;i<=2;i++){
-    let offset=i*6;
+  if(ssj2){
+    ctx.strokeStyle='red';
     ctx.beginPath();
-    ctx.moveTo(cx(),cy()-90-offset);
-    ctx.lineTo(cx()-20-offset,cy()-50-offset);
-    ctx.lineTo(cx()+20+offset,cy()-50-offset);
-    ctx.fill();
-  }
-
-  // 전기 오라
-  if(flags.lightning){
-    for(let i=0;i<20;i++){
-      ctx.strokeStyle='rgba(255,255,'+Math.floor(Math.random()*150)+','+Math.random()+')';
-      let angle=Math.random()*Math.PI*2;
-      let radius=Math.random()*50+20;
-      ctx.beginPath();
-      ctx.moveTo(cx(),cy()-30);
-      ctx.lineTo(cx()+radius*Math.cos(angle),cy()-30+radius*Math.sin(angle));
-      ctx.stroke();
-    }
+    ctx.moveTo(cx()-4,cy()-120); ctx.lineTo(cx()-6,cy()-108); ctx.stroke();
   }
 }
 
-// Z전사
-function zwarriors(){
-  ctx.fillStyle='#f09a1a';
-  ctx.fillRect(cx()-300,cy()+50,20,50); // 손오공
-  ctx.fillStyle='#4caf50';
-  ctx.fillRect(cx()-260,cy()+40,20,60); // 피콜로
-  ctx.fillStyle='#f1c27d';
-  ctx.fillRect(cx()-230,cy()+60,15,45); // 크리링
-}
-
-// 흰 새
-function bird(){
-  if(!flags.bird) return;
-  ctx.strokeStyle='#fff';
-  let wingOffset = Math.sin(Date.now()/100)*8;
-  ctx.beginPath();
-  ctx.moveTo(cx()-18,birdY);
-  ctx.lineTo(cx()+18,birdY+wingOffset);
-  ctx.stroke();
-  birdY += 0.8*birdDir; 
-  if(birdY>cy()-120||birdY<cy()-160) birdDir*=-1;
-}
-
-// LIGHTNING
-function lightning(){
-  if(!flags.lightning) return;
-  for(let i=0;i<6;i++){
-    ctx.strokeStyle='yellow';
+// ====== Hair ======
+function hair(ssj2=false){
+  ctx.fillStyle=ssj2?'#ffd700':'#111';
+  const by=cy()-138;
+  const spikes=[
+    [-26,by+28,-8, by-34, 6, by+26],
+    [-10,by+26, 0, by-60, 10, by+26],
+    [8,by+26, 22, by-42, 34, by+30]
+  ];
+  spikes.forEach(s=>{
     ctx.beginPath();
-    ctx.moveTo(cx()+Math.random()*60-30,cy()-120);
-    ctx.lineTo(cx()+Math.random()*80-40,cy()+100);
-    ctx.stroke();
-  }
+    ctx.moveTo(cx()+s[0],s[1]);
+    ctx.lineTo(cx()+s[2],s[3]);
+    ctx.lineTo(cx()+s[4],s[5]);
+    ctx.closePath(); ctx.fill();
+  });
 }
 
-// DRAW
-function draw(){
-  ctx.setTransform(camera.zoom,0,0,camera.zoom,
-    camera.shake?Math.random()*8-4:0,
-    camera.shake?Math.random()*8-4:0);
-  background(); dust(); bird();
-  if(step<4) android16();
-  if(step>=4) gohan();
-  if(step>=5) cell();
-  zwarriors(); lightning();
-  requestAnimationFrame(draw);
-}
+// ====== Caption ======
+function caption(text){ ctx.save(); ctx.globalAlpha=.94; ctx.fillStyle='rgba(0,0,0,.5)'; ctx.fillRect(0, canvas.height-130, canvas.width, 130); ctx.fillStyle='#fff'; ctx.font='15px system-ui'; ctx.textAlign='center'; wrap(text, canvas.width/2, canvas.height-92, canvas.width-40, 22); ctx.restore(); }
+function wrap(text,x,y,w,l){ const words=text.split(' '); let line=''; let yy=y; for(let i=0;i<words.length;i++){ const test=line+words[i]+' '; if(ctx.measureText(test).width>w){ ctx.fillText(line,x,yy); line=words[i]+' '; yy+=l; } else line=test; } ctx.fillText(line,x,yy); }
 
-// SCRIPT
-const script=[
-  {t:'scene',txt:'오반\n내가 좋아했던', duration:1500},
-  {t:'scene',txt:'오반\n자연과 동물들을', duration:1500},
-  {t:'scene',txt:'오반\n지.켜.주.거.라.', duration:1500},
-  {t:'scene',txt:'오반\n부탁한다~', duration:1500},
-  {t:'event',e:'crush', duration:1000},
-  {t:'scene',txt:'셀\n쓸데없는 참견이다', duration:1500},
-  {t:'scene',txt:'셀\n실패작 녀석', duration:1500},
-  {t:'event',e:'awakening', duration:2000},
-  {t:'scene',txt:'손오공\n오반!', duration:1500},
-  {t:'scene',txt:'피콜로\n드디어… 오반의 분노의 한계가 넘은 것인가?', duration:2000},
-  {t:'event',e:'pure_fx', duration:1500}
+// ====== Scenes ======
+let slowFrames=0;
+const SCENES=[
+  { run(){ flags.sky='dark'; draw(false,0,0); caption('오반\n내가 좋아했던'); } },
+  { run(){ draw(false,0,0); caption('오반\n자연과 동물들을'); } },
+  { run(){ draw(false,0,0); caption('오반\n지.켜.주.거.라.'); } },
+  { run(){ draw(false,0,0); caption('오반\n부탁한다~'); } },
+  { run(){ energy=100; shake=8; draw(true,.4,2); lightning(2.5); caption('초사이어인 2. 황금빛 오라와 번개가 전장을 뒤덮는다.'); } },
+  { run(){ draw(true,.36,1); caption('손오공\n오반!'); } },
+  { run(){ draw(true,.36,1); caption('피콜로\n드디어… 오반의 분노의 한계가 넘은 것인가?'); } }
 ];
 
-let step=0;
-
-// advance 씬 함수
-function advance(){
-  if(step>=script.length) return;
-  clearTimeout(animTimeout);
-  const s = script[step];
-  if(s.t==='scene') dlg.textContent=s.txt;
-  if(s.e==='crush'){flags.bird=true; flags.dust=true; dlg.textContent='';}
-  if(s.e==='awakening'){flags.sky='red'; flags.lightning=true; flags.ssj2=true; camera.shake=1; flags.dust=true; dlg.textContent='';}
-  if(s.e==='pure_fx'){flags.lightning=true; flags.dust=true; dlg.textContent='';}
-  step++;
-  if(s.duration){
-    animTimeout = setTimeout(advance, s.duration);
-  }
+// ====== Draw ======
+function draw(ssj2=false,auraAlpha=0,anger=0){
+  ctx.save();
+  ctx.scale(SCALE,SCALE);
+  if(shake) ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
+  bg();
+  if(ssj2) aura(160,auraAlpha);
+  drawGi();
+  head(anger,ssj2);
+  hair(ssj2);
+  ctx.restore();
 }
 
-addEventListener('pointerdown',()=>{
-  clearTimeout(animTimeout);
-  advance();
-});
-
-draw(); advance();
+// ====== Loop ======
+(function loop(){
+  if(slowFrames>0){ slowFrames--; setTimeout(loop,40); return; }
+  t+=0.016;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  SCENES[scene].run();
+  requestAnimationFrame(loop);
+})();
 </script>
 </body>
 </html>
