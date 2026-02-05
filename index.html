@@ -2,188 +2,272 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>SSJ2 Awakening – Scene 1</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dragon Ball Character Canvas</title>
 <style>
-html,body{
-  margin:0; padding:0;
-  background:#000; color:#fff;
-  font-family:system-ui,-apple-system,sans-serif;
-}
-canvas{display:block}
+  body {
+    margin: 0;
+    background: radial-gradient(circle at top, #111 0%, #000 60%);
+    color: #fff;
+    font-family: system-ui, sans-serif;
+  }
+  h1 {
+    text-align: center;
+    margin: 16px 0 8px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  p {
+    text-align: center;
+    margin: 0 0 16px;
+    opacity: 0.7;
+    font-size: 14px;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto 24px;
+    background: linear-gradient(#050505, #0e0e0e);
+    border-radius: 16px;
+    box-shadow:
+      0 0 40px rgba(0,200,150,0.15),
+      inset 0 0 40px rgba(255,255,255,0.03);
+  }
 </style>
 </head>
-
 <body>
-<canvas id="game"></canvas>
+
+<h1>DRAGON BALL – CHARACTER STUDY</h1>
+<p>Canvas Illustration / Facial Expression · Color · Costume Analysis</p>
+
+<canvas id="canvas" width="1400" height="900"></canvas>
 
 <script>
-/* =====================
-   BASIC SETUP
-===================== */
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
+const c = document.getElementById("canvas");
+const ctx = c.getContext("2d");
 
-function resize(){
-  canvas.width = innerWidth;
-  canvas.height = innerHeight;
+/* =========================
+   UTIL
+========================= */
+function circle(x,y,r,fill){
+  ctx.beginPath();
+  ctx.arc(x,y,r,0,Math.PI*2);
+  ctx.fillStyle = fill;
+  ctx.fill();
 }
-addEventListener('resize', resize);
-resize();
-
-const cx = ()=>canvas.width/2;
-const groundY = ()=>canvas.height*0.7;
-
-/* =====================
-   SCENE STATE
-===================== */
-let t = 0;
-let cameraZ = 1.25;        // 멀리서 시작
-let cameraTargetZ = 1.05;  // 천천히 접근
-
-/* =====================
-   DUST PARTICLES
-===================== */
-const dust = [];
-for(let i=0;i<120;i++){
-  dust.push({
-    x: Math.random()*canvas.width,
-    y: Math.random()*canvas.height,
-    r: Math.random()*2+0.5,
-    v: Math.random()*0.15+0.05
-  });
+function shadow(color, blur){
+  ctx.shadowColor = color;
+  ctx.shadowBlur = blur;
+}
+function resetShadow(){
+  ctx.shadowBlur = 0;
 }
 
-/* =====================
-   BACKGROUND
-===================== */
-function drawBackground(){
-  const g = ctx.createLinearGradient(0,0,0,canvas.height);
-  g.addColorStop(0,'#0a0b1c');
-  g.addColorStop(1,'#000');
-  ctx.fillStyle = g;
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-}
-
-/* =====================
-   ARENA (BROKEN)
-===================== */
-function drawBrokenArena(){
-  ctx.fillStyle='#1a1a1a';
-  ctx.fillRect(0, groundY(), canvas.width, canvas.height);
-
-  ctx.strokeStyle='#333';
-  ctx.lineWidth=2;
-
-  for(let i=0;i<12;i++){
+/* =========================
+   BACKGROUND GRID
+========================= */
+(function grid(){
+  ctx.strokeStyle = "rgba(255,255,255,0.04)";
+  for(let x=0;x<1400;x+=50){
     ctx.beginPath();
-    ctx.moveTo(Math.random()*canvas.width, groundY()+Math.random()*60);
-    ctx.lineTo(Math.random()*canvas.width, groundY()+Math.random()*120);
+    ctx.moveTo(x,0); ctx.lineTo(x,900);
     ctx.stroke();
+  }
+  for(let y=0;y<900;y+=50){
+    ctx.beginPath();
+    ctx.moveTo(0,y); ctx.lineTo(1400,y);
+    ctx.stroke();
+  }
+})();
+
+/* =========================
+   CHARACTER FUNCTIONS
+========================= */
+
+/* ---- GOHAN ---- */
+function drawGohan(x,y){
+  // aura
+  shadow("rgba(255,220,120,0.4)", 30);
+  circle(x, y+40, 120, "rgba(255,220,120,0.08)");
+  resetShadow();
+
+  // head
+  circle(x, y, 60, "#f2c9a5");
+
+  // eyes
+  circle(x-18,y-5,6,"#000");
+  circle(x+18,y-5,6,"#000");
+
+  // eyebrows (tension)
+  ctx.strokeStyle="#000";
+  ctx.lineWidth=3;
+  ctx.beginPath();
+  ctx.moveTo(x-30,y-20); ctx.lineTo(x-10,y-22);
+  ctx.moveTo(x+10,y-22); ctx.lineTo(x+30,y-20);
+  ctx.stroke();
+
+  // mouth
+  ctx.strokeStyle="#111";
+  ctx.beginPath();
+  ctx.moveTo(x-10,y+20); ctx.lineTo(x+10,y+20);
+  ctx.stroke();
+
+  // hair (sharp SSJ2-inspired)
+  ctx.fillStyle="#000";
+  ctx.beginPath();
+  ctx.moveTo(x-60,y-40);
+  ctx.lineTo(x-20,y-110);
+  ctx.lineTo(x,y-70);
+  ctx.lineTo(x+20,y-120);
+  ctx.lineTo(x+60,y-40);
+  ctx.closePath();
+  ctx.fill();
+
+  // body (purple gi)
+  ctx.fillStyle="#5b3a8e";
+  ctx.fillRect(x-45,y+60,90,120);
+
+  // belt
+  ctx.fillStyle="#222";
+  ctx.fillRect(x-45,y+110,90,12);
+}
+
+/* ---- ANDROID 16 ---- */
+function drawAndroid16(x,y){
+  // head
+  circle(x,y,60,"#e8e8e8");
+
+  // eyes (emotionless)
+  ctx.fillStyle="#000";
+  ctx.fillRect(x-20,y-10,10,6);
+  ctx.fillRect(x+10,y-10,10,6);
+
+  // mouth
+  ctx.fillRect(x-18,y+22,36,4);
+
+  // hair (orange, artificial)
+  ctx.fillStyle="#ff7a00";
+  ctx.fillRect(x-60,y-80,120,30);
+
+  // body armor
+  ctx.fillStyle="#4f6f2f";
+  ctx.fillRect(x-55,y+60,110,140);
+
+  ctx.fillStyle="#111";
+  ctx.fillRect(x-55,y+120,110,16);
+}
+
+/* ---- CELL ---- */
+function drawCell(x,y){
+  // head
+  circle(x,y,60,"#b7c56b");
+
+  // crown
+  ctx.fillStyle="#000";
+  ctx.beginPath();
+  ctx.moveTo(x-60,y-40);
+  ctx.lineTo(x,y-120);
+  ctx.lineTo(x+60,y-40);
+  ctx.closePath();
+  ctx.fill();
+
+  // eyes (half-open)
+  ctx.fillStyle="#000";
+  ctx.fillRect(x-25,y-5,18,5);
+  ctx.fillRect(x+7,y-5,18,5);
+
+  // smile
+  ctx.strokeStyle="#000";
+  ctx.beginPath();
+  ctx.arc(x,y+18,18,0,Math.PI,false);
+  ctx.stroke();
+
+  // body (exoskeleton)
+  ctx.fillStyle="#3d7a4f";
+  ctx.fillRect(x-50,y+60,100,150);
+
+  // spots
+  ctx.fillStyle="#111";
+  for(let i=0;i<10;i++){
+    circle(x-30+Math.random()*60,y+80+Math.random()*120,5,"#111");
   }
 }
 
-/* =====================
-   FALLEN Z FIGHTERS
-===================== */
-function drawFallenFighters(){
-  ctx.fillStyle='#0b0b0b';
+/* ---- GOKU ---- */
+function drawGoku(x,y){
+  // head
+  circle(x,y,60,"#f2c9a5");
 
-  // 왼쪽
-  ctx.save();
-  ctx.translate(cx()-160, groundY()+20);
-  ctx.rotate(-0.6);
-  ctx.fillRect(-30,-6,60,12);
-  ctx.restore();
+  // eyes
+  circle(x-18,y-5,7,"#000");
+  circle(x+18,y-5,7,"#000");
 
-  // 오른쪽
-  ctx.save();
-  ctx.translate(cx()+140, groundY()+30);
-  ctx.rotate(0.4);
-  ctx.fillRect(-28,-6,56,12);
-  ctx.restore();
-}
-
-/* =====================
-   DUST
-===================== */
-function drawDust(){
-  ctx.fillStyle='rgba(255,255,255,.15)';
-  dust.forEach(p=>{
-    p.y -= p.v;
-    if(p.y < 0) p.y = canvas.height;
-    ctx.beginPath();
-    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-    ctx.fill();
-  });
-}
-
-/* =====================
-   GOHAN (BACK VIEW)
-===================== */
-function drawGohanBack(){
-  const x = cx();
-  const y = groundY()-40;
-
-  // 상체
-  ctx.fillStyle='#4f2a73';
-  ctx.fillRect(x-22, y-60, 44, 54);
-
-  // 허리띠
-  ctx.fillStyle='#2c6fd6';
-  ctx.fillRect(x-24, y-10, 48, 8);
-
-  // 팔 (주먹 미세 떨림)
-  const tremble = Math.sin(t*12)*1.2;
-
-  ctx.fillStyle='#4f2a73';
-  ctx.fillRect(x-36+tremble, y-54, 14, 38);
-  ctx.fillRect(x+22-tremble, y-54, 14, 38);
-
-  // 고개 숙인 머리
+  // smile
+  ctx.strokeStyle="#000";
   ctx.beginPath();
-  ctx.arc(x, y-70, 16, 0, Math.PI*2);
-  ctx.fillStyle='#111';
+  ctx.arc(x,y+18,18,0,Math.PI,false);
+  ctx.stroke();
+
+  // hair (wild)
+  ctx.fillStyle="#000";
+  ctx.beginPath();
+  ctx.moveTo(x-70,y-20);
+  ctx.lineTo(x-40,y-110);
+  ctx.lineTo(x,y-70);
+  ctx.lineTo(x+40,y-120);
+  ctx.lineTo(x+70,y-20);
+  ctx.closePath();
   ctx.fill();
+
+  // gi
+  ctx.fillStyle="#ff7a18";
+  ctx.fillRect(x-50,y+60,100,140);
+
+  ctx.fillStyle="#2a4cff";
+  ctx.fillRect(x-50,y+120,100,14);
 }
 
-/* =====================
-   UPDATE
-===================== */
-function update(){
-  t += 0.016;
+/* ---- PICCOLO ---- */
+function drawPiccolo(x,y){
+  // head
+  circle(x,y,60,"#3fa85d");
 
-  // 카메라 천천히 접근
-  cameraZ += (cameraTargetZ - cameraZ) * 0.002;
+  // antenna
+  ctx.strokeStyle="#3fa85d";
+  ctx.lineWidth=6;
+  ctx.beginPath();
+  ctx.moveTo(x-20,y-60); ctx.lineTo(x-30,y-100);
+  ctx.moveTo(x+20,y-60); ctx.lineTo(x+30,y-100);
+  ctx.stroke();
+
+  // eyes
+  ctx.fillStyle="#fff";
+  ctx.fillRect(x-22,y-8,14,10);
+  ctx.fillRect(x+8,y-8,14,10);
+
+  ctx.fillStyle="#000";
+  circle(x-15,y-3,4,"#000");
+  circle(x+15,y-3,4,"#000");
+
+  // mouth (stern)
+  ctx.fillRect(x-15,y+22,30,4);
+
+  // cloak
+  ctx.fillStyle="#eee";
+  ctx.fillRect(x-70,y+50,140,160);
+
+  // inner gi
+  ctx.fillStyle="#5b3a8e";
+  ctx.fillRect(x-40,y+80,80,120);
 }
 
-/* =====================
-   RENDER
-===================== */
-function render(){
-  ctx.save();
-
-  ctx.translate(cx(), groundY());
-  ctx.scale(cameraZ, cameraZ);
-  ctx.translate(-cx(), -groundY());
-
-  drawBackground();
-  drawBrokenArena();
-  drawFallenFighters();
-  drawDust();
-  drawGohanBack();
-
-  ctx.restore();
-}
-
-/* =====================
-   LOOP
-===================== */
-(function loop(){
-  update();
-  render();
-  requestAnimationFrame(loop);
-})();
+/* =========================
+   DRAW ALL
+========================= */
+drawGohan(200,250);
+drawAndroid16(450,250);
+drawCell(700,250);
+drawGoku(950,250);
+drawPiccolo(1200,250);
 </script>
+
 </body>
 </html>
