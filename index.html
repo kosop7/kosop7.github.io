@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>SSJ2 Awakening – Scene Prototype</title>
+<title>SSJ2 Awakening – Scene 1</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 html,body{
@@ -11,57 +11,19 @@ html,body{
   font-family:system-ui,-apple-system,sans-serif;
 }
 canvas{display:block}
-
-#ui{
-  position:fixed;
-  left:0; right:0; bottom:0;
-  padding:12px;
-  background:rgba(0,0,0,.65);
-  display:flex;
-  gap:12px;
-  align-items:center;
-}
-button{
-  background:#ffd700;
-  border:0;
-  padding:10px 14px;
-  font-weight:800;
-  cursor:pointer;
-}
-
-#dialogue{
-  position:fixed;
-  left:50%; bottom:80px;
-  transform:translateX(-50%);
-  width:80%;
-  max-width:640px;
-  padding:14px;
-  background:rgba(0,0,0,.75);
-  border:1px solid rgba(255,255,255,.2);
-}
-#speaker{font-weight:700;margin-bottom:6px;}
 </style>
 </head>
 
 <body>
 <canvas id="game"></canvas>
 
-<div id="dialogue" style="display:none">
-  <div id="speaker"></div>
-  <div id="text"></div>
-</div>
-
-<div id="ui">
-  <button id="power">각성</button>
-  <div id="hint">SPACE / 버튼 → 진행</div>
-</div>
-
 <script>
 /* =====================
-   BASIC
+   BASIC SETUP
 ===================== */
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
+
 function resize(){
   canvas.width = innerWidth;
   canvas.height = innerHeight;
@@ -70,209 +32,129 @@ addEventListener('resize', resize);
 resize();
 
 const cx = ()=>canvas.width/2;
-const cy = ()=>canvas.height*0.65;
-
-let t=0, scene=1, sceneTime=0;
-let energy=0, awakened=false, shake=0;
+const groundY = ()=>canvas.height*0.7;
 
 /* =====================
-   CHAR STATE
+   SCENE STATE
 ===================== */
-const CHAR = {
-  GOHAN:{ eye:'down', blood:false, tear:false },
-  A16:{ distortion:0, broken:false, debris:[] }
-};
+let t = 0;
+let cameraZ = 1.25;        // 멀리서 시작
+let cameraTargetZ = 1.05;  // 천천히 접근
 
 /* =====================
-   DIALOGUE
+   DUST PARTICLES
 ===================== */
-const dlg={active:false,speaker:'',text:'',shown:0};
-
-function showDialogue(s,t){
-  dlg.active=true; dlg.speaker=s; dlg.text=t; dlg.shown=0;
-  dialogue.style.display='block';
-}
-function hideDialogue(){
-  dlg.active=false;
-  dialogue.style.display='none';
-}
-
-/* =====================
-   INPUT
-===================== */
-power.onclick = advance;
-addEventListener('keydown',e=>{
-  if(e.code==='Space') advance();
-});
-
-function advance(){
-  if(scene===6 && !awakened){
-    energy=Math.min(100,energy+10);
-    if(energy>=100) awakened=true;
-    return;
-  }
-  scene++; sceneTime=0; hideDialogue();
+const dust = [];
+for(let i=0;i<120;i++){
+  dust.push({
+    x: Math.random()*canvas.width,
+    y: Math.random()*canvas.height,
+    r: Math.random()*2+0.5,
+    v: Math.random()*0.15+0.05
+  });
 }
 
 /* =====================
    BACKGROUND
 ===================== */
-function bg(){
-  const g=ctx.createLinearGradient(0,0,0,canvas.height);
-  g.addColorStop(0,scene<4?'#0a0b1c':'#300000');
+function drawBackground(){
+  const g = ctx.createLinearGradient(0,0,0,canvas.height);
+  g.addColorStop(0,'#0a0b1c');
   g.addColorStop(1,'#000');
-  ctx.fillStyle=g;
+  ctx.fillStyle = g;
   ctx.fillRect(0,0,canvas.width,canvas.height);
 }
 
 /* =====================
-   EFFECTS
+   ARENA (BROKEN)
 ===================== */
-function aura(){
-  if(scene<6) return;
-  const r=(awakened?150:80+energy);
-  ctx.beginPath();
-  ctx.arc(cx(),cy(),r,0,Math.PI*2);
-  ctx.fillStyle=awakened?'rgba(255,215,0,.35)':'rgba(255,255,255,.15)';
-  ctx.fill();
-}
-function lightning(){
-  if(!awakened) return;
-  ctx.strokeStyle='rgba(200,220,255,.9)';
+function drawBrokenArena(){
+  ctx.fillStyle='#1a1a1a';
+  ctx.fillRect(0, groundY(), canvas.width, canvas.height);
+
+  ctx.strokeStyle='#333';
   ctx.lineWidth=2;
-  for(let k=0;k<3;k++){
+
+  for(let i=0;i<12;i++){
     ctx.beginPath();
-    let x=cx(),y=0;
-    ctx.moveTo(x,y);
-    while(y<canvas.height){
-      x+=(Math.random()-.5)*40;
-      y+=Math.random()*40+30;
-      ctx.lineTo(x,y);
-    }
+    ctx.moveTo(Math.random()*canvas.width, groundY()+Math.random()*60);
+    ctx.lineTo(Math.random()*canvas.width, groundY()+Math.random()*120);
     ctx.stroke();
   }
 }
 
 /* =====================
-   GOHAN
+   FALLEN Z FIGHTERS
 ===================== */
-function drawGohanBody(){
-  ctx.fillStyle='#5a2c83';
-  ctx.fillRect(cx()-26,cy()-86,52,56);
-  ctx.fillStyle='#2c6fd6';
-  ctx.fillRect(cx()-28,cy()-34,56,10);
-}
-function drawGohanFace(){
-  const x=cx(),y=cy()-98;
-  ctx.beginPath(); ctx.arc(x,y,20,0,Math.PI*2);
-  ctx.fillStyle='#f1c27d'; ctx.fill();
+function drawFallenFighters(){
+  ctx.fillStyle='#0b0b0b';
 
-  ctx.strokeStyle='#000'; ctx.lineWidth=2;
-  if(CHAR.GOHAN.eye==='down'){
-    ctx.beginPath();
-    ctx.moveTo(x-6,y-2); ctx.lineTo(x-2,y-2);
-    ctx.moveTo(x+2,y-2); ctx.lineTo(x+6,y-2);
-    ctx.stroke();
-  }else{
-    ctx.fillStyle='#000';
-    ctx.fillRect(x-7,y-5,3,4);
-    ctx.fillRect(x+4,y-5,3,4);
-  }
-  if(CHAR.GOHAN.blood){
-    ctx.strokeStyle='#b00000';
-    ctx.beginPath(); ctx.moveTo(x,y-14); ctx.lineTo(x-2,y+8);
-    ctx.stroke();
-  }
-  if(CHAR.GOHAN.tear){
-    ctx.fillStyle='rgba(200,220,255,.7)';
-    ctx.beginPath(); ctx.arc(x-4,y+10,2,0,Math.PI*2);
-    ctx.fill();
-  }
-}
-
-/* 🔧 머리카락 살짝 위로 */
-function drawHair(){
-  ctx.fillStyle=awakened?'#ffd700':'#111';
-  const baseY = cy()-122; // ⬅️ 기존 -118 → -122
-  const spikes=[
-    [-26,baseY+18,-6,baseY-30,6,baseY+18],
-    [-10,baseY+16,0,baseY-40,10,baseY+16],
-    [6,baseY+18,26,baseY-26,40,baseY+20]
-  ];
-  spikes.forEach(s=>{
-    ctx.beginPath();
-    ctx.moveTo(cx()+s[0],s[1]);
-    ctx.lineTo(cx()+s[2],s[3]);
-    ctx.lineTo(cx()+s[4],s[5]);
-    ctx.closePath(); ctx.fill();
-  });
-}
-
-/* =====================
-   ANDROID 16
-===================== */
-function drawAndroid16(){
-  if(CHAR.A16.broken){
-    drawAndroid16HeadBreak();
-    return;
-  }
-  const d=CHAR.A16.distortion;
+  // 왼쪽
   ctx.save();
-  ctx.translate(cx(),cy()-110);
-  ctx.rotate(d*0.03);
-  ctx.scale(1+d*0.03,1-d*0.02);
-  ctx.beginPath();
-  ctx.arc(0,0,22,0,Math.PI*2);
-  ctx.fillStyle='#d0b070'; ctx.fill();
-  ctx.fillStyle='#000';
-  ctx.fillRect(-8,-4,4,4);
-  ctx.fillRect(4,-4,4,4);
+  ctx.translate(cx()-160, groundY()+20);
+  ctx.rotate(-0.6);
+  ctx.fillRect(-30,-6,60,12);
+  ctx.restore();
+
+  // 오른쪽
+  ctx.save();
+  ctx.translate(cx()+140, groundY()+30);
+  ctx.rotate(0.4);
+  ctx.fillRect(-28,-6,56,12);
   ctx.restore();
 }
 
-/* 🔧 머리 파괴 */
-function drawAndroid16HeadBreak(){
-  CHAR.A16.debris.forEach(p=>{
-    p.vy+=0.3;
-    p.y+=p.vy;
-    ctx.fillStyle='#888';
-    ctx.fillRect(p.x,p.y,4,4);
+/* =====================
+   DUST
+===================== */
+function drawDust(){
+  ctx.fillStyle='rgba(255,255,255,.15)';
+  dust.forEach(p=>{
+    p.y -= p.v;
+    if(p.y < 0) p.y = canvas.height;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fill();
   });
+}
+
+/* =====================
+   GOHAN (BACK VIEW)
+===================== */
+function drawGohanBack(){
+  const x = cx();
+  const y = groundY()-40;
+
+  // 상체
+  ctx.fillStyle='#4f2a73';
+  ctx.fillRect(x-22, y-60, 44, 54);
+
+  // 허리띠
+  ctx.fillStyle='#2c6fd6';
+  ctx.fillRect(x-24, y-10, 48, 8);
+
+  // 팔 (주먹 미세 떨림)
+  const tremble = Math.sin(t*12)*1.2;
+
+  ctx.fillStyle='#4f2a73';
+  ctx.fillRect(x-36+tremble, y-54, 14, 38);
+  ctx.fillRect(x+22-tremble, y-54, 14, 38);
+
+  // 고개 숙인 머리
+  ctx.beginPath();
+  ctx.arc(x, y-70, 16, 0, Math.PI*2);
+  ctx.fillStyle='#111';
+  ctx.fill();
 }
 
 /* =====================
    UPDATE
 ===================== */
 function update(){
-  t+=0.016; sceneTime+=0.016;
+  t += 0.016;
 
-  if(scene===2){
-    showDialogue('인조인간 16호','자연과 동물들을… 지켜주거라.');
-    CHAR.A16.distortion+=0.01;
-  }
-
-  if(scene===3 && !CHAR.A16.broken){
-    CHAR.A16.broken=true;
-    for(let i=0;i<20;i++){
-      CHAR.A16.debris.push({
-        x:cx()+Math.random()*40-20,
-        y:cy()-110,
-        vy:Math.random()*-4
-      });
-    }
-  }
-
-  if(scene===4){
-    CHAR.GOHAN.eye='shaking';
-    CHAR.GOHAN.blood=true;
-  }
-  if(scene===5){
-    CHAR.GOHAN.eye='focused';
-    CHAR.GOHAN.tear=true;
-  }
-  if(scene>=6){
-    shake=awakened?6:3;
-  }
+  // 카메라 천천히 접근
+  cameraZ += (cameraTargetZ - cameraZ) * 0.002;
 }
 
 /* =====================
@@ -280,23 +162,18 @@ function update(){
 ===================== */
 function render(){
   ctx.save();
-  if(shake) ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
 
-  bg();
-  if(scene<=3) drawAndroid16();
-  drawGohanBody();
-  drawGohanFace();
-  drawHair();
-  aura();
-  lightning();
+  ctx.translate(cx(), groundY());
+  ctx.scale(cameraZ, cameraZ);
+  ctx.translate(-cx(), -groundY());
+
+  drawBackground();
+  drawBrokenArena();
+  drawFallenFighters();
+  drawDust();
+  drawGohanBack();
 
   ctx.restore();
-
-  if(dlg.active){
-    dlg.shown=Math.min(dlg.text.length,dlg.shown+1);
-    speaker.innerText=dlg.speaker;
-    text.innerText=dlg.text.slice(0,dlg.shown);
-  }
 }
 
 /* =====================
