@@ -2,25 +2,24 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>Dragon Ball Character Canvas</title>
+<title>Dragon Ball Canvas Characters</title>
 <style>
   body {
     margin: 0;
-    background: radial-gradient(circle at top, #111 0%, #000 60%);
+    background: radial-gradient(circle at top, #111 0%, #000 70%);
     color: #fff;
     font-family: system-ui, sans-serif;
   }
   h1 {
     text-align: center;
-    margin: 16px 0 8px;
-    font-weight: 700;
+    margin: 16px 0 6px;
     letter-spacing: 1px;
   }
   p {
     text-align: center;
-    margin: 0 0 16px;
-    opacity: 0.7;
-    font-size: 14px;
+    margin-bottom: 16px;
+    opacity: 0.6;
+    font-size: 13px;
   }
   canvas {
     display: block;
@@ -28,185 +27,124 @@
     background: linear-gradient(#050505, #0e0e0e);
     border-radius: 16px;
     box-shadow:
-      0 0 40px rgba(0,200,150,0.15),
+      0 0 50px rgba(0,200,150,0.15),
       inset 0 0 40px rgba(255,255,255,0.03);
   }
 </style>
 </head>
 <body>
 
-<h1>DRAGON BALL – CHARACTER STUDY</h1>
-<p>Canvas Illustration / Facial Expression · Color · Costume Analysis</p>
+<h1>DRAGON BALL – FULL BODY STUDY</h1>
+<p>Neutral Expression · Full Limbs · High Detail Canvas</p>
 
-<canvas id="canvas" width="1400" height="900"></canvas>
+<canvas id="canvas" width="1500" height="900"></canvas>
 
 <script>
 const c = document.getElementById("canvas");
 const ctx = c.getContext("2d");
 
-/* =========================
-   UTIL
-========================= */
-function circle(x,y,r,fill){
+/* ========== UTIL ========== */
+function circle(x,y,r,color){
   ctx.beginPath();
   ctx.arc(x,y,r,0,Math.PI*2);
-  ctx.fillStyle = fill;
+  ctx.fillStyle=color;
   ctx.fill();
 }
-function shadow(color, blur){
-  ctx.shadowColor = color;
-  ctx.shadowBlur = blur;
+
+/* ========== LIMB SET ========== */
+function arms(x,y,skin){
+  ctx.fillStyle=skin;
+  ctx.fillRect(x-80,y+80,35,110); // left
+  ctx.fillRect(x+45,y+80,35,110); // right
 }
-function resetShadow(){
-  ctx.shadowBlur = 0;
+function legs(x,y,pants){
+  ctx.fillStyle=pants;
+  ctx.fillRect(x-35,y+200,30,120);
+  ctx.fillRect(x+5,y+200,30,120);
 }
 
-/* =========================
-   BACKGROUND GRID
-========================= */
-(function grid(){
-  ctx.strokeStyle = "rgba(255,255,255,0.04)";
-  for(let x=0;x<1400;x+=50){
-    ctx.beginPath();
-    ctx.moveTo(x,0); ctx.lineTo(x,900);
-    ctx.stroke();
-  }
-  for(let y=0;y<900;y+=50){
-    ctx.beginPath();
-    ctx.moveTo(0,y); ctx.lineTo(1400,y);
-    ctx.stroke();
-  }
-})();
+/* ========== GOHAN ========== */
+function gohan(x,y){
+  arms(x,y,"#f2c9a5");
+  legs(x,y,"#3d2566");
 
-/* =========================
-   CHARACTER FUNCTIONS
-========================= */
+  circle(x,y,55,"#f2c9a5");
 
-/* ---- GOHAN ---- */
-function drawGohan(x,y){
-  // aura
-  shadow("rgba(255,220,120,0.4)", 30);
-  circle(x, y+40, 120, "rgba(255,220,120,0.08)");
-  resetShadow();
+  ctx.fillStyle="#000"; // neutral eyes
+  ctx.fillRect(x-18,y-5,10,6);
+  ctx.fillRect(x+8,y-5,10,6);
 
-  // head
-  circle(x, y, 60, "#f2c9a5");
-
-  // eyes
-  circle(x-18,y-5,6,"#000");
-  circle(x+18,y-5,6,"#000");
-
-  // eyebrows (tension)
-  ctx.strokeStyle="#000";
-  ctx.lineWidth=3;
+  ctx.fillStyle="#000"; // hair
   ctx.beginPath();
-  ctx.moveTo(x-30,y-20); ctx.lineTo(x-10,y-22);
-  ctx.moveTo(x+10,y-22); ctx.lineTo(x+30,y-20);
-  ctx.stroke();
-
-  // mouth
-  ctx.strokeStyle="#111";
-  ctx.beginPath();
-  ctx.moveTo(x-10,y+20); ctx.lineTo(x+10,y+20);
-  ctx.stroke();
-
-  // hair (sharp SSJ2-inspired)
-  ctx.fillStyle="#000";
-  ctx.beginPath();
-  ctx.moveTo(x-60,y-40);
+  ctx.moveTo(x-60,y-30);
   ctx.lineTo(x-20,y-110);
   ctx.lineTo(x,y-70);
-  ctx.lineTo(x+20,y-120);
-  ctx.lineTo(x+60,y-40);
+  ctx.lineTo(x+20,y-115);
+  ctx.lineTo(x+60,y-30);
   ctx.closePath();
   ctx.fill();
 
-  // body (purple gi)
-  ctx.fillStyle="#5b3a8e";
-  ctx.fillRect(x-45,y+60,90,120);
-
-  // belt
-  ctx.fillStyle="#222";
-  ctx.fillRect(x-45,y+110,90,12);
+  ctx.fillStyle="#5b3a8e"; // body
+  ctx.fillRect(x-45,y+55,90,150);
 }
 
-/* ---- ANDROID 16 ---- */
-function drawAndroid16(x,y){
-  // head
-  circle(x,y,60,"#e8e8e8");
+/* ========== ANDROID 16 ========== */
+function a16(x,y){
+  arms(x,y,"#e8e8e8");
+  legs(x,y,"#2a2a2a");
 
-  // eyes (emotionless)
+  circle(x,y,55,"#e8e8e8");
+
   ctx.fillStyle="#000";
-  ctx.fillRect(x-20,y-10,10,6);
-  ctx.fillRect(x+10,y-10,10,6);
+  ctx.fillRect(x-20,y-6,12,5);
+  ctx.fillRect(x+8,y-6,12,5);
 
-  // mouth
-  ctx.fillRect(x-18,y+22,36,4);
-
-  // hair (orange, artificial)
   ctx.fillStyle="#ff7a00";
-  ctx.fillRect(x-60,y-80,120,30);
+  ctx.fillRect(x-60,y-85,120,30);
 
-  // body armor
   ctx.fillStyle="#4f6f2f";
-  ctx.fillRect(x-55,y+60,110,140);
-
-  ctx.fillStyle="#111";
-  ctx.fillRect(x-55,y+120,110,16);
+  ctx.fillRect(x-50,y+55,100,160);
 }
 
-/* ---- CELL ---- */
-function drawCell(x,y){
-  // head
-  circle(x,y,60,"#b7c56b");
+/* ========== CELL ========== */
+function cell(x,y){
+  arms(x,y,"#3d7a4f");
+  legs(x,y,"#2e5c3e");
 
-  // crown
-  ctx.fillStyle="#000";
+  circle(x,y,55,"#b7c56b");
+
+  ctx.fillStyle="#000"; // crown
   ctx.beginPath();
-  ctx.moveTo(x-60,y-40);
+  ctx.moveTo(x-60,y-35);
   ctx.lineTo(x,y-120);
-  ctx.lineTo(x+60,y-40);
+  ctx.lineTo(x+60,y-35);
   ctx.closePath();
   ctx.fill();
 
-  // eyes (half-open)
   ctx.fillStyle="#000";
-  ctx.fillRect(x-25,y-5,18,5);
-  ctx.fillRect(x+7,y-5,18,5);
+  ctx.fillRect(x-22,y-4,16,5);
+  ctx.fillRect(x+6,y-4,16,5);
 
-  // smile
-  ctx.strokeStyle="#000";
-  ctx.beginPath();
-  ctx.arc(x,y+18,18,0,Math.PI,false);
-  ctx.stroke();
-
-  // body (exoskeleton)
   ctx.fillStyle="#3d7a4f";
-  ctx.fillRect(x-50,y+60,100,150);
+  ctx.fillRect(x-50,y+55,100,160);
 
-  // spots
-  ctx.fillStyle="#111";
-  for(let i=0;i<10;i++){
-    circle(x-30+Math.random()*60,y+80+Math.random()*120,5,"#111");
+  ctx.fillStyle="#111"; // spots
+  for(let i=0;i<12;i++){
+    circle(x-35+Math.random()*70,y+70+Math.random()*130,5,"#111");
   }
 }
 
-/* ---- GOKU ---- */
-function drawGoku(x,y){
-  // head
-  circle(x,y,60,"#f2c9a5");
+/* ========== GOKU ========== */
+function goku(x,y){
+  arms(x,y,"#f2c9a5");
+  legs(x,y,"#ff7a18");
 
-  // eyes
-  circle(x-18,y-5,7,"#000");
-  circle(x+18,y-5,7,"#000");
+  circle(x,y,55,"#f2c9a5");
 
-  // smile
-  ctx.strokeStyle="#000";
-  ctx.beginPath();
-  ctx.arc(x,y+18,18,0,Math.PI,false);
-  ctx.stroke();
+  ctx.fillStyle="#000";
+  ctx.fillRect(x-18,y-5,10,6);
+  ctx.fillRect(x+8,y-5,10,6);
 
-  // hair (wild)
   ctx.fillStyle="#000";
   ctx.beginPath();
   ctx.moveTo(x-70,y-20);
@@ -217,56 +155,41 @@ function drawGoku(x,y){
   ctx.closePath();
   ctx.fill();
 
-  // gi
   ctx.fillStyle="#ff7a18";
-  ctx.fillRect(x-50,y+60,100,140);
-
-  ctx.fillStyle="#2a4cff";
-  ctx.fillRect(x-50,y+120,100,14);
+  ctx.fillRect(x-50,y+55,100,160);
 }
 
-/* ---- PICCOLO ---- */
-function drawPiccolo(x,y){
-  // head
-  circle(x,y,60,"#3fa85d");
+/* ========== PICCOLO ========== */
+function piccolo(x,y){
+  arms(x,y,"#3fa85d");
+  legs(x,y,"#3fa85d");
 
-  // antenna
+  circle(x,y,55,"#3fa85d");
+
   ctx.strokeStyle="#3fa85d";
   ctx.lineWidth=6;
   ctx.beginPath();
-  ctx.moveTo(x-20,y-60); ctx.lineTo(x-30,y-100);
-  ctx.moveTo(x+20,y-60); ctx.lineTo(x+30,y-100);
+  ctx.moveTo(x-20,y-60); ctx.lineTo(x-30,y-105);
+  ctx.moveTo(x+20,y-60); ctx.lineTo(x+30,y-105);
   ctx.stroke();
 
-  // eyes
-  ctx.fillStyle="#fff";
-  ctx.fillRect(x-22,y-8,14,10);
-  ctx.fillRect(x+8,y-8,14,10);
-
   ctx.fillStyle="#000";
-  circle(x-15,y-3,4,"#000");
-  circle(x+15,y-3,4,"#000");
+  ctx.fillRect(x-18,y-5,10,6);
+  ctx.fillRect(x+8,y-5,10,6);
 
-  // mouth (stern)
-  ctx.fillRect(x-15,y+22,30,4);
-
-  // cloak
   ctx.fillStyle="#eee";
-  ctx.fillRect(x-70,y+50,140,160);
+  ctx.fillRect(x-70,y+50,140,180);
 
-  // inner gi
   ctx.fillStyle="#5b3a8e";
-  ctx.fillRect(x-40,y+80,80,120);
+  ctx.fillRect(x-40,y+80,80,140);
 }
 
-/* =========================
-   DRAW ALL
-========================= */
-drawGohan(200,250);
-drawAndroid16(450,250);
-drawCell(700,250);
-drawGoku(950,250);
-drawPiccolo(1200,250);
+/* ========== DRAW ========== */
+gohan(200,220);
+a16(480,220);
+cell(760,220);
+goku(1040,220);
+piccolo(1320,220);
 </script>
 
 </body>
