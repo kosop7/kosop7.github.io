@@ -2,65 +2,34 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DragonBall Z: 오반의 각성</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>손오반 각성</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div id="container">
-        <canvas id="gameCanvas"></canvas>
-        
-        <div id="ui-overlay">
-            <div id="title-screen" class="ui-screen">
-                <h1>DRAGONBALL Z</h1>
-                <h2>오반의 각성</h2>
-                <p class="subtitle">"지켜주거라..."</p>
-                <button id="start-btn" class="btn-primary">시작하기</button>
-                <div class="controls-info">
-                    <p>마우스 클릭 / 터치: 장면 진행</p>
-                    <p>스페이스바: 대사 넘기기</p>
-                </div>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="ui-layer">
+            <div id="dialogue-box">
+                <div id="speaker-name"></div>
+                <div id="dialogue-text"></div>
+                <div id="touch-indicator">터치하여 계속</div>
             </div>
-            
-            <div id="dialogue-box" class="hidden">
-                <div class="speaker">셀</div>
-                <div class="text">쓸데없는 참견이다. 실패작 녀석.</div>
-                <div class="continue-indicator">▼</div>
-            </div>
-            
-            <div id="scene-indicator" class="hidden">
-                <span class="scene-title">SCENE 1. 붕괴 직전의 정적</span>
-                <div class="scene-progress">
-                    <div class="progress-bar"></div>
-                </div>
-            </div>
+            <div id="scene-indicator">SCENE <span id="scene-number">1</span>/9</div>
+            <div id="debug-info" style="display:none;"></div>
         </div>
-        
-        <div id="debug-info" class="hidden">
-            <div>FPS: <span id="fps-counter">0</span></div>
-            <div>Scene: <span id="scene-index">0</span></div>
+        <div id="loading-screen">
+            <div class="loading-text">로딩 중...</div>
+            <div class="loading-bar">
+                <div class="loading-progress"></div>
+            </div>
         </div>
     </div>
-    
-    <audio id="bgm" loop>
-        <source src="" type="audio/mpeg">
-    </audio>
-    <audio id="sfx-16">
-        <source src="" type="audio/mpeg">
-    </audio>
-    <audio id="sfx-cell">
-        <source src="" type="audio/mpeg">
-    </audio>
-    <audio id="sfx-scream">
-        <source src="" type="audio/mpeg">
-    </audio>
-    <audio id="sfx-transformation">
-        <source src="" type="audio/mpeg">
-    </audio>
-    
+    <audio id="bgm" loop></audio>
+    <audio id="sfx"></audio>
     <script src="script.js"></script>
 </body>
 </html>
