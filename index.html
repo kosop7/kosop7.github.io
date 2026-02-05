@@ -1,164 +1,567 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <title>각성</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <style>
-    html,body{margin:0;padding:0;background:#000;color:#fff;font-family:system-ui,-apple-system,sans-serif;touch-action:manipulation}
-    canvas{display:block}
-    #ui{display:none}
-    #hint{opacity:.85;font-size:13px}
-  </style>
+<meta charset="UTF-8">
+<title>손오반 각성 - 인터랙티브 씬</title>
+<style>
+/* =====================
+   기본 세팅
+===================== */
+html, body {
+  margin: 0;
+  padding: 0;
+  background: black;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+}
+
+#game {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, #2a2a2a, #000);
+  user-select: none;
+}
+
+/* =====================
+   배경
+===================== */
+#background {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(#6aa9ff, #d9f2ff);
+  transition: filter 1s, background 1s;
+}
+
+.bg-arena {
+  background:
+    radial-gradient(circle at center, #ddd 0%, #aaa 60%, #777 100%),
+    linear-gradient(#6aa9ff, #d9f2ff);
+}
+
+.bg-red {
+  background:
+    radial-gradient(circle at center, #800 0%, #300 60%, #000 100%),
+    linear-gradient(#800, #200);
+  filter: saturate(160%) contrast(120%);
+}
+
+/* =====================
+   바닥(경기장 원형)
+===================== */
+#arena-floor {
+  position: absolute;
+  bottom: -10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140%;
+  height: 60%;
+  background:
+    radial-gradient(circle at center, #999 0%, #666 45%, #444 70%, #222 100%);
+  border-radius: 50%;
+  opacity: 0.8;
+}
+
+/* =====================
+   캐릭터 실루엣
+===================== */
+#character {
+  position: absolute;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 260px;
+  height: 460px;
+  background: linear-gradient(#222, #000);
+  clip-path: polygon(50% 0%, 60% 10%, 70% 20%, 80% 40%, 75% 70%, 65% 100%, 35% 100%, 25% 70%, 20% 40%, 30% 20%, 40% 10%);
+  opacity: 0;
+  transition: opacity 0.6s, filter 0.6s, transform 0.6s;
+}
+
+.char-visible {
+  opacity: 1;
+}
+
+.char-gohan {
+  background: linear-gradient(#333, #000);
+}
+
+.char-cell {
+  background: linear-gradient(#063, #021);
+}
+
+/* =====================
+   오라 / 전기 이펙트
+===================== */
+#aura {
+  position: absolute;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 340px;
+  height: 520px;
+  border-radius: 50%;
+  filter: blur(20px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.aura-yellow {
+  background:
+    radial-gradient(circle at center, rgba(255,255,100,0.9) 0%, rgba(255,200,0,0.8) 35%, rgba(255,120,0,0.4) 60%, rgba(255,0,0,0) 75%);
+  animation: auraPulse 0.25s infinite alternate;
+}
+
+@keyframes auraPulse {
+  from { transform: translateX(-50%) scale(1); opacity: 0.7; }
+  to { transform: translateX(-50%) scale(1.07); opacity: 1; }
+}
+
+/* 전기 */
+.lightning {
+  position: absolute;
+  width: 6px;
+  height: 80px;
+  background: linear-gradient(white, yellow);
+  box-shadow: 0 0 12px yellow;
+  animation: lightningFlash 0.15s infinite alternate;
+}
+
+@keyframes lightningFlash {
+  from { opacity: 0.2; }
+  to { opacity: 1; }
+}
+
+/* =====================
+   흙먼지
+===================== */
+.dust {
+  position: absolute;
+  bottom: 120px;
+  width: 10px;
+  height: 10px;
+  background: #aaa;
+  border-radius: 50%;
+  opacity: 0.7;
+  animation: dustRise 1s forwards;
+}
+
+@keyframes dustRise {
+  from { transform: translateY(0) scale(1); opacity: 0.7; }
+  to { transform: translateY(-120px) scale(2); opacity: 0; }
+}
+
+/* =====================
+   새
+===================== */
+#bird {
+  position: absolute;
+  top: 120px;
+  left: -100px;
+  width: 60px;
+  height: 30px;
+  border-top: 4px solid white;
+  border-radius: 50%;
+  transform: rotate(-10deg);
+  opacity: 0;
+}
+
+.fly {
+  animation: birdFly 3s linear forwards;
+}
+
+@keyframes birdFly {
+  from { left: -100px; opacity: 0; }
+  to { left: 110%; opacity: 1; }
+}
+
+/* =====================
+   화면 효과
+===================== */
+.shake {
+  animation: shake 0.1s infinite;
+}
+
+@keyframes shake {
+  0% { transform: translate(0,0); }
+  25% { transform: translate(3px, -2px); }
+  50% { transform: translate(-3px, 2px); }
+  75% { transform: translate(2px, 3px); }
+  100% { transform: translate(0,0); }
+}
+
+.flash {
+  animation: flash 0.15s ease;
+}
+
+@keyframes flash {
+  from { filter: brightness(3); }
+  to { filter: brightness(1); }
+}
+
+/* =====================
+   텍스트 박스 (역전재판 스타일)
+===================== */
+#textbox {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 170px;
+  background:
+    linear-gradient(#0b1a2f, #040b17);
+  border-top: 4px solid #f0c050;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.8);
+  padding: 12px 20px;
+  box-sizing: border-box;
+  color: white;
+}
+
+#nameplate {
+  display: inline-block;
+  background: linear-gradient(#f6d46a, #c89b2c);
+  color: #1b1b1b;
+  font-weight: bold;
+  padding: 4px 14px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.4);
+}
+
+#text {
+  margin-top: 10px;
+  font-size: 20px;
+  line-height: 1.5;
+  min-height: 80px;
+  text-shadow: 0 0 6px rgba(255,255,255,0.15);
+}
+
+#hint {
+  position: absolute;
+  right: 20px;
+  bottom: 10px;
+  font-size: 12px;
+  opacity: 0.7;
+  animation: blink 1.2s infinite;
+}
+
+@keyframes blink {
+  0% { opacity: 0.2; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.2; }
+}
+
+/* =====================
+   선택지
+===================== */
+#choices {
+  position: absolute;
+  bottom: 200px;
+  width: 100%;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.choice {
+  background: linear-gradient(#eee, #bbb);
+  color: #111;
+  padding: 10px 24px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.choice:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.7);
+}
+</style>
 </head>
 <body>
-<canvas id="game"></canvas>
-<div id="ui"><div id="hint">화면 아무 곳이나 탭하여 진행</div></div>
+
+<div id="game">
+  <div id="background" class="bg-arena"></div>
+  <div id="arena-floor"></div>
+  <div id="bird"></div>
+  <div id="aura"></div>
+  <div id="character" class="char-gohan"></div>
+
+  <div id="choices"></div>
+
+  <div id="textbox">
+    <div id="nameplate"></div>
+    <div id="text"></div>
+    <div id="hint">▶ 클릭하여 계속</div>
+  </div>
+</div>
+
 <script>
-// ====== Mobile-first Canvas Setup ======
-const canvas=document.getElementById('game');
-const ctx=canvas.getContext('2d');
-function resize(){canvas.width=innerWidth;canvas.height=innerHeight}addEventListener('resize',resize);resize();
+/* =====================
+   요소 참조
+===================== */
+const game = document.getElementById("game");
+const bg = document.getElementById("background");
+const char = document.getElementById("character");
+const aura = document.getElementById("aura");
+const bird = document.getElementById("bird");
+const nameplate = document.getElementById("nameplate");
+const textBox = document.getElementById("text");
+const hint = document.getElementById("hint");
+const choicesBox = document.getElementById("choices");
 
-// ====== Global State ======
-let scene=0, t=0, shake=0;
-let energy=0, awakened=false;
-const SCALE=1.25; // 모바일 중앙 기준 스케일 보정              // 더 큰 클로즈업
-const cx=()=>canvas.width/2;   // 중앙 유지
-const cy=()=>canvas.height/2; // 중앙 정렬 // 하단 배치
-
-// ====== Utilities ======
-function vibrate(p){ if(navigator.vibrate) navigator.vibrate(p); }
-function lerp(a,b,k){ return a+(b-a)*k; }
-
-// ====== Input (Anywhere Click / Tap) ======
-function next(){ scene=Math.min(scene+1, SCENES.length-1); t=0; vibrate(scene===4?[120,40,120,40,180]:25); }
-canvas.addEventListener('touchstart',e=>{e.preventDefault();next();},{passive:false});
-canvas.addEventListener('click',()=>next());
-
-// ====== Background & Effects ======
-function bg(){ const g=ctx.createLinearGradient(0,0,0,canvas.height); g.addColorStop(0,'#0a0b1c'); g.addColorStop(1,'#000'); ctx.fillStyle=g; ctx.fillRect(0,0,canvas.width,canvas.height); }
-function lightning(intensity=1){ ctx.strokeStyle='rgba(200,220,255,.95)'; ctx.lineWidth=2; const n=Math.ceil(intensity*3); for(let k=0;k<n;k++){ ctx.beginPath(); let x=cx()+Math.sin(t*2+k)*120,y=0; ctx.moveTo(x,y); while(y<canvas.height){ x+=(Math.random()-.5)*50; y+=Math.random()*45+25; ctx.lineTo(x,y);} ctx.stroke(); } }
-function aura(r,alpha){ ctx.beginPath(); ctx.arc(cx(),cy(),r+(Math.sin(t*2)*10),0,Math.PI*2); ctx.fillStyle=`rgba(255,215,0,${alpha})`; ctx.fill(); }
-
-// ====== Character: Clothing (Gohan Gi) ======
-function drawGi(){
-  // 상의 (보라)
-  ctx.fillStyle='#5a2c83';
-  ctx.fillRect(cx()-30, cy()-96, 60, 62);
-  // 허리띠 (파랑)
-  ctx.fillStyle='#2c6fd6';
-  ctx.fillRect(cx()-34, cy()-34, 68, 12);
-  // 하의
-  ctx.fillStyle='#5a2c83';
-  ctx.fillRect(cx()-28, cy()-22, 22, 42);
-  ctx.fillRect(cx()+6,  cy()-22, 22, 42);
-  // 부츠
-  ctx.fillStyle='#e0c28b';
-  ctx.fillRect(cx()-30, cy()+18, 26, 12);
-  ctx.fillRect(cx()+4,  cy()+18, 26, 12);
-  ctx.fillStyle='#1f4fb8';
-  ctx.fillRect(cx()-30, cy()+30, 26, 8);
-  ctx.fillRect(cx()+4,  cy()+30, 26, 8);
+/* =====================
+   유틸 함수
+===================== */
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// ====== Character: Head (Classic anime style – cleaner & sharper) ======
-function head(anger=0){
-  // 얼굴 베이스 (둥근 애니 비율)
-  ctx.beginPath();
-  ctx.ellipse(cx(), cy()-108, 18, 22, 0, 0, Math.PI*2);
-  ctx.fillStyle='#f1c27d'; ctx.fill();
-
-  // 눈썹 (SSJ2 각진 인상)
-  ctx.strokeStyle='#000'; ctx.lineWidth=2;
-  ctx.beginPath();
-  ctx.moveTo(cx()-10, cy()-116-anger); ctx.lineTo(cx()-2, cy()-118-anger);
-  ctx.moveTo(cx()+2,  cy()-118-anger); ctx.lineTo(cx()+10, cy()-116-anger);
-  ctx.stroke();
-
-  // 눈
-  ctx.fillStyle='#000';
-  ctx.fillRect(cx()-7, cy()-108, 3, 3);
-  ctx.fillRect(cx()+4, cy()-108, 3, 3);
-
-  // 입 (결연한 일자)
-  ctx.beginPath(); ctx.moveTo(cx()-5, cy()-98); ctx.lineTo(cx()+5, cy()-98); ctx.stroke();
+function screenShake(duration = 400) {
+  game.classList.add("shake");
+  setTimeout(() => game.classList.remove("shake"), duration);
 }
 
-// ====== Character: Hair (Classic SSJ2 silhouette) ======
-function hair(ssj2=false){
-  ctx.fillStyle=ssj2?'#ffd700':'#111';
-  const by=cy()-138;
-  const spikes=[
-    [-26,by+28,-8, by-34,  6, by+26],
-    [-10,by+26,  0, by-60, 10, by+26],
-    [  8,by+26, 22, by-42, 34, by+30]
-  ];
-  spikes.forEach(s=>{
-    ctx.beginPath();
-    ctx.moveTo(cx()+s[0],s[1]);
-    ctx.lineTo(cx()+s[2],s[3]);
-    ctx.lineTo(cx()+s[4],s[5]);
-    ctx.closePath(); ctx.fill();
-  });
+function screenFlash() {
+  game.classList.add("flash");
+  setTimeout(() => game.classList.remove("flash"), 150);
 }
 
-// (캡션 제거됨: 장면 연출만 사용)
-function wrap(text,x,y,w,l){ const words=text.split(' '); let line=''; let yy=y; for(let i=0;i<words.length;i++){ const test=line+words[i]+' '; if(ctx.measureText(test).width>w){ ctx.fillText(line,x,yy); line=words[i]+' '; yy+=l; } else line=test; } ctx.fillText(line,x,yy); }
+function spawnDust(count = 20) {
+  for (let i = 0; i < count; i++) {
+    const d = document.createElement("div");
+    d.className = "dust";
+    d.style.left = (window.innerWidth / 2 + (Math.random() * 300 - 150)) + "px";
+    d.style.animationDelay = (Math.random() * 0.3) + "s";
+    game.appendChild(d);
+    setTimeout(() => d.remove(), 1000);
+  }
+}
 
-// ====== Scenes ======
-let slowFrames=0;
-const SCENES=[
-  { // 0 갈등
-    run(){ energy=lerp(energy,25,.03); shake=1; draw(false,.14,0);  }
+function spawnLightning(count = 6) {
+  for (let i = 0; i < count; i++) {
+    const l = document.createElement("div");
+    l.className = "lightning";
+    l.style.left = (window.innerWidth / 2 + (Math.random() * 240 - 120)) + "px";
+    l.style.bottom = (140 + Math.random() * 240) + "px";
+    l.style.height = (60 + Math.random() * 120) + "px";
+    game.appendChild(l);
+    setTimeout(() => l.remove(), 200);
+  }
+}
+
+function showBird() {
+  bird.classList.remove("fly");
+  void bird.offsetWidth;
+  bird.classList.add("fly");
+  bird.style.opacity = 1;
+}
+
+/* =====================
+   타자기 효과
+===================== */
+let typing = false;
+
+async function typeText(text) {
+  typing = true;
+  textBox.textContent = "";
+  for (let i = 0; i < text.length; i++) {
+    textBox.textContent += text[i];
+    await wait(28);
+  }
+  typing = false;
+}
+
+/* =====================
+   장면 데이터 (네 대사 기반)
+===================== */
+const script = [
+  {
+    name: "손오반",
+    char: "gohan",
+    text: "내가 좋아했던\n자연과 동물들을\n지.켜.주.거.라.\n부탁한다~",
+    bg: "arena",
+    effect: async () => {
+      char.className = "char-gohan char-visible";
+      aura.className = "";
+    }
   },
-  { // 1 16호의 말
-    run(){ energy=lerp(energy,45,.03); shake=2; draw(false,.18,0);  }
+  {
+    name: "연출",
+    text: "(16호가 셀에게 짓밟힌다)",
+    effect: async () => {
+      screenFlash();
+      screenShake(500);
+      spawnDust(25);
+      await wait(300);
+    }
   },
-  { // 2 16호의 희생
-    run(){ energy=lerp(energy,65,.04); shake=4; draw(false,.22,0); lightning(1.2);  }
+  {
+    name: "연출",
+    text: "(16호의 파편이 바닥에 떨어진다)",
+    effect: async () => {
+      spawnDust(20);
+      await wait(200);
+    }
   },
-  { // 3 변신 개시
-    run(){ energy=lerp(energy,95,.05); shake=6; draw(false,.28,1); lightning(2);  }
+  {
+    name: "셀",
+    char: "cell",
+    text: "쓸데없는 참견이다.\n실패작 녀석.",
+    effect: async () => {
+      char.className = "char-cell char-visible";
+      char.style.filter = "brightness(0.8)";
+    }
   },
-  { // 4 SSJ2 완료
-    run(){ awakened=true; energy=100; shake=8; draw(true,.38,2); lightning(3);  }
+  {
+    name: "연출",
+    text: "(손오반 눈 위로 흰 새가 날아간다)",
+    effect: async () => {
+      char.className = "char-gohan char-visible";
+      showBird();
+      await wait(400);
+    }
   },
-  { // 5 참수 (슬로우 프레임)
-    run(){
-      slowFrames=5; // 3~5프레임 슬로우
-      shake=7; draw(true,.36,2); lightning(2.8);
-      ctx.save(); ctx.strokeStyle='rgba(255,255,255,.95)'; ctx.lineWidth=3;
-      ctx.beginPath(); ctx.moveTo(cx()-140, cy()-98); ctx.lineTo(cx()+140, cy()-52); ctx.stroke(); ctx.restore();
-       }
+  {
+    name: "연출",
+    text: "(손오반의 이마에서 피가 흐른다)",
+    effect: async () => {
+      char.style.filter = "brightness(0.7) contrast(120%)";
+      await wait(300);
+    }
   },
-  { // 6 결과 암시 (두개골 비폭력 표현)
-    run(){ shake=2; draw(true,.32,2);
-      // 상·하 실루엣 분리 잔상 (사람 머리 형태 암시)
-      ctx.save(); ctx.globalAlpha=.6; ctx.fillStyle='rgba(120,160,120,.6)';
-      // 머리 형태 타원 잔상
-      ctx.beginPath(); ctx.ellipse(cx()-6, cy()-104, 14, 16, 0, 0, Math.PI*2); ctx.fill();
-      // 몸통 잔상
-      ctx.fillRect(cx()-18, cy()-36, 36, 44);
-      ctx.restore();
-       }
+  {
+    name: "연출",
+    text: "(오반 뒤로 붉은 빛이 비치고, 하늘이 붉게 물든다)",
+    effect: async () => {
+      bg.className = "bg-red";
+      screenFlash();
+      await wait(300);
+    }
   },
-  { // 7 연속 격파 & 반응
-    run(){ shake=4; draw(true,.30,2); lightning(2.2);  }
+  {
+    name: "손오반",
+    text: "으아아아아아아아아!!!",
+    effect: async () => {
+      screenShake(1200);
+      spawnDust(40);
+      await wait(200);
+    }
+  },
+  {
+    name: "연출",
+    text: "(노란 전기가 불꽃처럼 오반을 감싼다)",
+    effect: async () => {
+      aura.className = "aura-yellow";
+      spawnLightning(10);
+      screenFlash();
+      await wait(300);
+    }
+  },
+  {
+    name: "연출",
+    text: "(흙바람이 사방으로 흩날린다)",
+    effect: async () => {
+      spawnDust(50);
+      screenShake(800);
+      await wait(400);
+    }
+  },
+  {
+    name: "손오공",
+    text: "오반!!",
+    effect: async () => {
+      spawnLightning(6);
+      await wait(200);
+    }
+  },
+  {
+    name: "연출",
+    text: "(손오반의 눈에서 눈물이 흘러내린다)",
+    effect: async () => {
+      char.style.filter = "brightness(1) contrast(140%)";
+      await wait(300);
+    }
+  },
+  {
+    name: "피콜로",
+    text: "드디어...\n오반의 분노의 한계가 넘은 것인가?",
+    effect: async () => {
+      spawnLightning(4);
+      await wait(200);
+    }
+  },
+  {
+    name: "연출",
+    text: "(카메라는 아주 길게 손오반의 얼굴을 클로즈업한다.\n그 뒤로는 불꽃 같은 전기가 흐른다.)",
+    effect: async () => {
+      char.style.transform = "translateX(-50%) scale(1.1)";
+      aura.className = "aura-yellow";
+      spawnLightning(12);
+      screenShake(600);
+      await wait(600);
+    }
+  },
+  {
+    name: "SYSTEM",
+    text: "— END —\n\n(클릭하면 다시 시작합니다)",
+    effect: async () => {}
   }
 ];
 
-// ====== Draw ======
-function draw(ssj2, auraAlpha, anger){ ctx.save(); ctx.scale(SCALE,SCALE); if(shake) ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake); bg(); if(ssj2) aura(160,auraAlpha); drawGi(); head(anger); hair(ssj2); ctx.restore(); }
+/* =====================
+   엔진
+===================== */
+let index = 0;
+let waiting = false;
 
-// ====== Loop ======
-(function loop(){
-  if(slowFrames>0){ slowFrames--; setTimeout(loop,40); return; }
-  t+=0.016;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  SCENES[scene].run();
-  requestAnimationFrame(loop);
-})();
+async function showLine() {
+  const line = script[index];
+  waiting = true;
+
+  nameplate.textContent = line.name;
+  hint.style.display = "none";
+
+  if (line.bg === "arena") bg.className = "bg-arena";
+
+  if (line.effect) await line.effect();
+
+  await typeText(line.text);
+  hint.style.display = "block";
+  waiting = false;
+}
+
+function next() {
+  if (typing) return;
+  if (waiting) return;
+
+  index++;
+  if (index >= script.length) {
+    index = 0;
+    bg.className = "bg-arena";
+    aura.className = "";
+    char.style.transform = "translateX(-50%) scale(1)";
+  }
+  showLine();
+}
+
+/* =====================
+   입력
+===================== */
+game.addEventListener("click", next);
+document.addEventListener("keydown", e => {
+  if (e.key === " " || e.key === "Enter") next();
+});
+
+/* =====================
+   시작
+===================== */
+showLine();
 </script>
+
 </body>
 </html>
