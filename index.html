@@ -1,206 +1,66 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<title>Dragon Ball – Canvas Character Study</title>
-<style>
-body{
-  margin:0;
-  background:#222;
-  color:#fff;
-  font-family:system-ui;
-}
-canvas{
-  display:block;
-  margin:20px auto;
-  background:linear-gradient(#e0f2f1,#b2dfdb);
-  border-radius:18px;
-  box-shadow:0 0 60px rgba(0,0,0,.25);
-  cursor:pointer;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DragonBall Z: 오반의 각성</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
-
-<canvas id="c" width="1600" height="950"></canvas>
-
-<script>
-const ctx = c.getContext("2d");
-let angry = false;
-
-c.addEventListener("click",()=>{
-  angry = !angry;
-  draw();
-});
-
-/* ===== BASIC SHAPES ===== */
-function circle(x,y,r,c){
-  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
-  ctx.fillStyle=c; ctx.fill();
-}
-function rect(x,y,w,h,c){
-  ctx.fillStyle=c; ctx.fillRect(x,y,w,h);
-}
-
-/* ===== FACE ===== */
-function face(x,y,skin){
-  circle(x,y,52,skin);
-
-  // eyes
-  if(버럭){
-    ctx.strokeStyle="#000";
-    ctx.lineWidth=4;
-    ctx.beginPath();
-    ctx.moveTo(x-22,y-6); ctx.lineTo(x-6,y-12);
-    ctx.moveTo(x+22,y-6); ctx.lineTo(x+6,y-12);
-    ctx.stroke();
-  }else{
-    rect(x-18,y-6,12,6,"#000");
-    rect(x+6,y-6,12,6,"#000");
-  }
-
-  // nose
-  rect(x-2,y+4,4,10,"rgba(0,0,0,.25)");
-
-  // mouth
-  if(버럭){
-    ctx.strokeStyle="#000";
-    ctx.lineWidth=4;
-    ctx.beginPath();
-    ctx.moveTo(x-14,y+26);
-    ctx.lineTo(x+14,y+22);
-    ctx.stroke();
-  }else{
-    rect(x-10,y+24,20,3,"#000");
-  }
-}
-
-/* ===== LIMBS ===== */
-function arms(x,y,skin){
-  rect(x-80,y+70,28,110,skin);
-  rect(x+52,y+70,28,110,skin);
-}
-function legs(x,y,pants){
-  rect(x-28,y+220,26,130,pants);
-  rect(x+2,y+220,26,130,pants);
-}
-
-/* ===== HAIR ===== */
-
-// Goku / Gohan spikes (front layer)
-function spikyHairFront(x,y,color,scale=1){
-  ctx.fillStyle=color;
-  ctx.beginPath();
-  ctx.moveTo(x-55*scale,y-20);
-  ctx.lineTo(x-45*scale,y-95*scale);
-  ctx.lineTo(x-15*scale,y-55*scale);
-  ctx.lineTo(x,y-105*scale);
-  ctx.lineTo(x+15*scale,y-60*scale);
-  ctx.lineTo(x+45*scale,y-95*scale);
-  ctx.lineTo(x+55*scale,y-20);
-  ctx.closePath();
-  ctx.fill();
-}
-
-// Android 16 mohawk
-function flatMohawkFront(x,y,color){
-  rect(x-65,y-80,130,30,color);
-  rect(x-45,y-110,90,35,color);
-}
-
-// Cell crown
-function cellCrownFront(x,y){
-  ctx.fillStyle="#0b0b0b";
-  ctx.beginPath();
-  ctx.moveTo(x-55,y-30);
-  ctx.lineTo(x,y-120);
-  ctx.lineTo(x+55,y-30);
-  ctx.closePath();
-  ctx.fill();
-}
-
-// Piccolo antenna
-function piccoloAntennaFront(x,y){
-  ctx.strokeStyle="#3fa85d";
-  ctx.lineWidth=6;
-  ctx.beginPath();
-  ctx.moveTo(x-18,y-45); ctx.lineTo(x-30,y-105);
-  ctx.moveTo(x+18,y-45); ctx.lineTo(x+30,y-105);
-  ctx.stroke();
-}
-
-/* ===== CHARACTERS ===== */
-function gohan(x,y){
-  arms(x,y,"#f2c9a5");
-  legs(x,y,"#2e235f");
-
-  face(x,y,"#f2c9a5");
-  spikyHairFront(x,y,"#111",0.85);
-
-  rect(x-45,y+55,90,170,"#5b3a8e");
-  rect(x-45,y+135,90,12,"#2b1a45");
-}
-
-function a16(x,y){
-  arms(x,y,"#d8d8d8");
-  legs(x,y,"#1b1b1b");
-
-  face(x,y,"#d8d8d8");
-  flatMohawkFront(x,y,"#ff7a00");
-
-  rect(x-55,y+55,110,180,"#4f6f2f");
-  rect(x-55,y+135,110,14,"#111");
-}
-
-function cell(x,y){
-  arms(x,y,"#3d7a4f");
-  legs(x,y,"#2e5c3e");
-
-  face(x,y,"#b7c56b");
-  cellCrownFront(x,y);
-
-  rect(x-50,y+55,100,180,"#3d7a4f");
-
-  for(let i=0;i<14;i++){
-    circle(x-40+Math.random()*80,y+80+Math.random()*130,4,"#111");
-  }
-}
-
-function goku(x,y){
-  arms(x,y,"#f2c9a5");
-  legs(x,y,"#ff7a18");
-
-  face(x,y,"#f2c9a5");
-  spikyHairFront(x,y,"#000",1.05);
-
-  rect(x-50,y+55,100,180,"#ff7a18");
-  rect(x-50,y+135,100,14,"#2346ff");
-}
-
-function piccolo(x,y){
-  arms(x,y,"#3fa85d");
-  legs(x,y,"#3fa85d");
-
-  face(x,y,"#3fa85d");
-  piccoloAntennaFront(x,y);
-
-  rect(x-75,y+45,150,200,"#eee");
-  rect(x-45,y+80,90,160,"#5b3a8e");
-}
-
-/* ===== DRAW ===== */
-function draw(){
-  ctx.clearRect(0,0,c.width,c.height);
-
-  gohan(200,240);
-  a16(500,240);
-  cell(800,240);
-  goku(1100,240);
-  piccolo(1400,240);
-}
-
-draw();
-</script>
-
+    <div id="container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="ui-overlay">
+            <div id="title-screen" class="ui-screen">
+                <h1>DRAGONBALL Z</h1>
+                <h2>오반의 각성</h2>
+                <p class="subtitle">"지켜주거라..."</p>
+                <button id="start-btn" class="btn-primary">시작하기</button>
+                <div class="controls-info">
+                    <p>마우스 클릭 / 터치: 장면 진행</p>
+                    <p>스페이스바: 대사 넘기기</p>
+                </div>
+            </div>
+            
+            <div id="dialogue-box" class="hidden">
+                <div class="speaker">셀</div>
+                <div class="text">쓸데없는 참견이다. 실패작 녀석.</div>
+                <div class="continue-indicator">▼</div>
+            </div>
+            
+            <div id="scene-indicator" class="hidden">
+                <span class="scene-title">SCENE 1. 붕괴 직전의 정적</span>
+                <div class="scene-progress">
+                    <div class="progress-bar"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="debug-info" class="hidden">
+            <div>FPS: <span id="fps-counter">0</span></div>
+            <div>Scene: <span id="scene-index">0</span></div>
+        </div>
+    </div>
+    
+    <audio id="bgm" loop>
+        <source src="" type="audio/mpeg">
+    </audio>
+    <audio id="sfx-16">
+        <source src="" type="audio/mpeg">
+    </audio>
+    <audio id="sfx-cell">
+        <source src="" type="audio/mpeg">
+    </audio>
+    <audio id="sfx-scream">
+        <source src="" type="audio/mpeg">
+    </audio>
+    <audio id="sfx-transformation">
+        <source src="" type="audio/mpeg">
+    </audio>
+    
+    <script src="script.js"></script>
 </body>
 </html>
