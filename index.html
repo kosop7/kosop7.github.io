@@ -2,320 +2,209 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gohan SSJ2 Awakening</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-html,body{
-  margin:0; padding:0;
-  background:#000;
-  overflow:hidden;
-  font-family:Arial,sans-serif;
-}
-#scene{
-  position:relative;
-  width:100vw;
-  height:100vh;
-}
-.sky{
-  position:absolute;
-  inset:0;
-  background:linear-gradient(#222,#000);
-  transition:background 1.5s;
-}
-.sky.red{
-  background:linear-gradient(#5a0000,#120000);
-}
-
-/* ===== 공통 캐릭터 ===== */
-.character{
-  position:absolute;
-  bottom:10%;
-  transform:translateX(-50%);
-}
-
-/* ===== 손오반 ===== */
-#gohan{
-  left:50%;
-  width:160px;
-  height:320px;
-  opacity:0;
-}
-#gohan .hair{
-  position:absolute;
-  top:-50px; left:10px;
-  width:140px; height:100px;
-  display:flex; justify-content:space-between;
-}
-#gohan .hair span{
-  width:22px; height:100px;
-  background:linear-gradient(#fff176,#fbc02d);
-  clip-path:polygon(50% 0,0 100%,100% 100%);
-}
-#gohan .head{
-  position:absolute;
-  top:40px; left:30px;
-  width:100px; height:110px;
-  background:#f1c27d;
-}
-.eye{position:absolute;top:40px;width:12px;height:16px;background:#000;}
-.eye.left{left:20px;} .eye.right{right:20px;}
-.brow{position:absolute;top:20px;width:30px;height:6px;background:#000;}
-.brow.left{left:10px;} .brow.right{right:10px;}
-.mouth{position:absolute;bottom:18px;left:30px;width:40px;height:6px;background:#000;}
-.torso{
-  position:absolute;
-  top:150px; left:40px;
-  width:80px; height:90px;
-  background:#6a1b9a;
-}
-.arm{
-  position:absolute; top:150px;
-  width:20px; height:80px;
-  background:#f1c27d;
-}
-.arm.left{left:15px;} .arm.right{right:15px;}
-.leg{
-  position:absolute; bottom:0;
-  width:25px; height:80px;
-  background:#311b92;
-}
-.leg.left{left:45px;} .leg.right{right:45px;}
-
-/* 오라 */
-#aura{
-  position:absolute;
-  inset:-40px;
-  background:radial-gradient(circle,rgba(255,0,0,.6),transparent 70%);
-  opacity:0;
-  animation:pulse .4s infinite alternate;
-}
-@keyframes pulse{to{transform:scale(1.1);}}
-
-/* ===== 셀 ===== */
-#cell{
-  left:65%;
-  width:160px;
-  height:320px;
-}
-.cell-head{
-  width:90px;height:80px;
-  background:#558b2f;
-  margin:auto;
-}
-.cell-body{
-  width:140px;height:180px;
-  margin:auto;
-  background:
-    radial-gradient(#000 15%,transparent 16%) 0 0/20px 20px,
-    #7cb342;
-}
-/* 셀 발 */
-#cell-foot{
-  position:absolute;
-  bottom:0; left:40px;
-  width:80px; height:30px;
-  background:#2e7d32;
-  transform:translateY(-200px);
-}
-
-/* ===== 16호 ===== */
-#android16{
-  left:35%;
-  width:180px;
-  height:280px;
-}
-.head16{
-  width:100px;height:60px;
-  background:#ff7043;
-  margin:auto;
-}
-.torso16{
-  width:140px;height:140px;
-  background:#2e7d32;
-  margin:auto;
-}
-.arm16{
-  position:absolute;top:80px;
-  width:25px;height:120px;
-  background:#b0bec5;
-}
-.arm16.left{left:-20px;}
-.arm16.right{right:-20px;}
-
-/* 파편 */
-.fragment{
-  position:absolute;
-  width:10px;height:10px;
-  background:#999;
-  animation:fall 1s forwards;
-}
-@keyframes fall{
-  to{transform:translateY(300px) rotate(360deg);opacity:0;}
-}
-
-/* ===== 관전자 ===== */
-#watchers{
-  position:absolute;
-  right:5%; bottom:12%;
-  display:flex; gap:10px;
-}
-.watcher{
-  width:40px;height:80px;
-  opacity:.6;
-}
-.vegeta{background:#1a237e;}
-.piccolo{background:#2e7d32;}
-.goku{background:#ef6c00;}
-.krillin{background:#fbc02d;}
-
-/* ===== 붉은 번개 ===== */
-.lightning{
-  position:absolute;
-  width:3px;height:120px;
-  background:red;
-  animation:zap .15s infinite;
-}
-@keyframes zap{50%{opacity:0;}}
-
-/* ===== 자막 ===== */
-#subtitle{
-  position:absolute;
-  bottom:0;
-  width:100%;
-  min-height:80px;
-  background:rgba(0,0,0,.7);
-  color:#fff;
-  padding:15px;
-  display:none;
-}
-#tap{
-  position:absolute;
-  bottom:90px;
-  width:100%;
-  text-align:center;
-  color:#aaa;
+html,body{margin:0;padding:0;background:#000;overflow:hidden}
+canvas{display:block}
+#dialog{
+ position:absolute; bottom:5%; left:5%; width:90%;
+ padding:12px;
+ background:rgba(0,0,0,.78);
+ color:#fff; font-size:16px;
+ border:1px solid #fff;
+ display:none;
 }
 </style>
 </head>
-
 <body>
-<div id="scene">
-  <div class="sky" id="sky"></div>
-
-  <!-- 16호 -->
-  <div class="character" id="android16">
-    <div class="head16"></div>
-    <div class="torso16"></div>
-    <div class="arm16 left"></div>
-    <div class="arm16 right"></div>
-  </div>
-
-  <!-- 셀 -->
-  <div class="character" id="cell">
-    <div class="cell-head"></div>
-    <div class="cell-body"></div>
-    <div id="cell-foot"></div>
-  </div>
-
-  <!-- 손오반 -->
-  <div class="character" id="gohan">
-    <div id="aura"></div>
-    <div class="hair"><span></span><span></span><span></span><span></span><span></span></div>
-    <div class="head">
-      <div class="brow left"></div><div class="brow right"></div>
-      <div class="eye left"></div><div class="eye right"></div>
-      <div class="mouth"></div>
-    </div>
-    <div class="torso"></div>
-    <div class="arm left"></div><div class="arm right"></div>
-    <div class="leg left"></div><div class="leg right"></div>
-  </div>
-
-  <!-- 관전자 -->
-  <div id="watchers">
-    <div class="watcher vegeta"></div>
-    <div class="watcher piccolo"></div>
-    <div class="watcher goku"></div>
-    <div class="watcher krillin"></div>
-  </div>
-
-  <div id="subtitle"></div>
-  <div id="tap">TAP</div>
-</div>
+<canvas id="c"></canvas>
+<div id="dialog"></div>
 
 <script>
-const subtitle=document.getElementById("subtitle");
-const sky=document.getElementById("sky");
-const aura=document.getElementById("aura");
-const gohan=document.getElementById("gohan");
-const foot=document.getElementById("cell-foot");
-const android16=document.getElementById("android16");
-const scene=document.getElementById("scene");
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+const dialog=document.getElementById('dialog');
+function resize(){canvas.width=innerWidth;canvas.height=innerHeight;}
+addEventListener('resize',resize);resize();
 
-function show(text){
-  subtitle.style.display="block";
-  subtitle.textContent="";
-  let i=0;
-  const t=setInterval(()=>{
-    subtitle.textContent+=text[i++];
-    if(i>=text.length) clearInterval(t);
-  },40);
+let cut=0;
+const cx=()=>canvas.width/2;
+const cy=()=>canvas.height*0.6;
+
+// =================== GOHAN (정밀 재설계) ===================
+function drawGohan(ssj2=false){
+ // --- GI ---
+ ctx.fillStyle='#5a2c83';
+ ctx.fillRect(cx()-28,cy()-92,56,64);
+
+ // folds
+ ctx.fillStyle='rgba(0,0,0,.15)';
+ ctx.fillRect(cx()-4,cy()-92,4,64);
+
+ // belt
+ ctx.fillStyle='#2c6fd6';
+ ctx.fillRect(cx()-32,cy()-28,64,12);
+
+ // pants
+ ctx.fillStyle='#5a2c83';
+ ctx.fillRect(cx()-26,cy()-16,22,48);
+ ctx.fillRect(cx()+4,cy()-16,22,48);
+
+ // boots
+ ctx.fillStyle='#e0c28b';
+ ctx.fillRect(cx()-28,cy()+32,24,12);
+ ctx.fillRect(cx()+4,cy()+32,24,12);
+ ctx.fillStyle='#1f4fb8';
+ ctx.fillRect(cx()-28,cy()+44,24,8);
+ ctx.fillRect(cx()+4,cy()+44,24,8);
+
+ // --- HEAD ---
+ ctx.beginPath();
+ ctx.ellipse(cx(),cy()-110,18,22,0,0,Math.PI*2);
+ ctx.fillStyle='#f1c27d'; ctx.fill();
+
+ // eyebrows
+ ctx.strokeStyle='#000'; ctx.lineWidth=2;
+ ctx.beginPath();
+ ctx.moveTo(cx()-12,cy()-120); ctx.lineTo(cx()-2,cy()-122);
+ ctx.moveTo(cx()+2,cy()-122); ctx.lineTo(cx()+12,cy()-120);
+ ctx.stroke();
+
+ // eyes
+ ctx.fillStyle='#000';
+ ctx.fillRect(cx()-7,cy()-110,3,3);
+ ctx.fillRect(cx()+4,cy()-110,3,3);
+
+ // mouth
+ ctx.beginPath();
+ ctx.moveTo(cx()-5,cy()-98);
+ ctx.lineTo(cx()+5,cy()-98);
+ ctx.stroke();
+
+ // --- HAIR ---
+ ctx.fillStyle=ssj2?'#ffd700':'#111';
+ const spikes=ssj2?
+ [[-28,24,-6,-52,8,24],[0,24,4,-72,16,24],[14,24,30,-46,42,30]]
+ :
+ [[-20,18,-6,-40,8,18],[12,18,22,-34,32,22]];
+ spikes.forEach(s=>{
+  ctx.beginPath();
+  ctx.moveTo(cx()+s[0],cy()-110+s[1]);
+  ctx.lineTo(cx()+s[2],cy()-110+s[3]);
+  ctx.lineTo(cx()+s[4],cy()-110+s[5]);
+  ctx.closePath(); ctx.fill();
+ });
 }
-function hide(){subtitle.style.display="none";}
 
-const scenes=[
-  ()=>{},
-  ()=>show("오반 "),
-  ()=>show("내가 좋아했던 "),
-  ()=>show("자연과 동물들을"),
-  ()=>show("지.켜.주.거.라. "),
-  ()=>show("부탁한다~ "),
-  ()=>{
-    hide();
-    foot.style.transition="transform .3s";
-    foot.style.transform="translateY(0)";
-    setTimeout(()=>{
-      android16.style.transform="scaleY(.2)";
-      for(let i=0;i<15;i++){
-        const f=document.createElement("div");
-        f.className="fragment";
-        f.style.left=Math.random()*window.innerWidth+"px";
-        f.style.top="50%";
-        scene.appendChild(f);
-      }
-      setTimeout(()=>android16.remove(),300);
-    },300);
-  },
-  ()=>show("쓸데없는 참견이다 "),
-  ()=>{
-    show("실패작 녀석 ");
-    sky.classList.add("red");
-  },
-  ()=>{
-    hide();
-    gohan.style.opacity=1;
-  },
-  ()=>{
-    aura.style.opacity=1;
-    for(let i=0;i<6;i++){
-      const l=document.createElement("div");
-      l.className="lightning";
-      l.style.left=45+Math.random()*60+"%";
-      l.style.top="20%";
-      scene.appendChild(l);
-    }
-  },
-  ()=>show("드디어 "),
-  ()=>show("오반의 분노의 한계가 넘은 것인가? ")
-];
+// =================== CELL (셀 완전체 스타일) ===================
+function drawCell(){
+ // body
+ ctx.fillStyle='#2e7f3f';
+ ctx.fillRect(cx()+120,cy()-100,46,96);
 
-let idx=0;
-function next(){
-  if(idx<scenes.length) scenes[idx++]();
+ // chest pattern
+ ctx.fillStyle='#111';
+ ctx.fillRect(cx()+128,cy()-90,30,40);
+
+ // head
+ ctx.fillStyle='#000';
+ ctx.fillRect(cx()+120,cy()-130,46,30);
+
+ // eyes
+ ctx.fillStyle='#fff';
+ ctx.fillRect(cx()+132,cy()-120,4,4);
+ ctx.fillRect(cx()+148,cy()-120,4,4);
+
+ // tail hint
+ ctx.strokeStyle='#2e7f3f';
+ ctx.beginPath();
+ ctx.moveTo(cx()+166,cy()-40);
+ ctx.lineTo(cx()+200,cy());
+ ctx.stroke();
 }
-document.body.addEventListener("click",next);
-document.body.addEventListener("touchstart",next);
+
+// =================== ANDROID 16 ===================
+function draw16(broken=false){
+ // body
+ ctx.fillStyle='#4c7a3d';
+ ctx.fillRect(cx()-150,cy()-72,40,72);
+
+ // shoulder pads
+ ctx.fillStyle='#6aa84f';
+ ctx.fillRect(cx()-154,cy()-76,20,16);
+ ctx.fillRect(cx()-110,cy()-76,20,16);
+
+ // head
+ ctx.beginPath();
+ ctx.arc(cx()-130,cy()-94,18,0,Math.PI*2);
+ ctx.fillStyle='#d28c3c'; ctx.fill();
+
+ // face
+ ctx.fillStyle='#000';
+ ctx.fillRect(cx()-136,cy()-96,4,4);
+ ctx.fillRect(cx()-124,cy()-96,4,4);
+
+ if(broken){
+  ctx.fillStyle='#555';
+  for(let i=0;i<14;i++){
+   ctx.fillRect(cx()-160+Math.random()*60,cy()-40+Math.random()*40,4,4);
+  }
+ }
+}
+
+// =================== RED LIGHTNING ===================
+function redLightning(){
+ for(let i=0;i<8;i++){
+  ctx.strokeStyle='rgba(255,0,0,0.85)';
+  ctx.beginPath();
+  let x=cx(),y=cy()-110;
+  ctx.moveTo(x,y);
+  for(let j=0;j<6;j++){
+   x+=Math.random()*36-18;
+   y+=Math.random()*38;
+   ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+ }
+}
+
+// =================== RENDER ===================
+function render(){
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ ctx.fillStyle=cut>=9?'#330000':'#2b2b2b';
+ ctx.fillRect(0,0,canvas.width,canvas.height);
+
+ dialog.style.display='none';
+
+ if(cut<6) draw16(cut>=6);
+ if(cut>=6) drawCell();
+ if(cut>=1) drawGohan(cut>=10);
+ if(cut>=9) redLightning();
+
+ const texts=[
+  null,
+  "내가 좋아했던 ",
+  "자연과 동물들을",
+  "지.켜.주.거.라. ",
+  "부탁한다~ ",
+  null,
+  "쓸데없는 참견이다 \n실패작 녀석 ",
+  null,
+  null,
+  null,
+  null,
+  "드디어 \n오반의 분노의 한계가 넘은 것인가? "
+ ];
+ if(texts[cut]){
+  dialog.style.display='block';
+  dialog.innerText=texts[cut];
+ }
+}
+
+render();
+addEventListener('click',()=>{cut=Math.min(cut+1,11);render();});
+addEventListener('touchstart',()=>{cut=Math.min(cut+1,11);render();});
 </script>
 </body>
 </html>
