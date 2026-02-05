@@ -21,8 +21,9 @@ const ctx=canvas.getContext('2d');
 function resize(){canvas.width=innerWidth;canvas.height=innerHeight;}addEventListener('resize',resize);resize();
 
 // ====== Global State ======
-let scene=0,t=0,shake=0;
+let scene=0,t=0,shake=0,slowFrames=0;
 let energy=0,awakened=false;
+let flags = {sky:'dark'}; // <-- 초기값 설정
 const SCALE=1.35;
 const cx=()=>canvas.width/2;
 const cy=()=>canvas.height*0.76;
@@ -37,9 +38,30 @@ canvas.addEventListener('touchstart',e=>{e.preventDefault();next();},{passive:fa
 canvas.addEventListener('click',()=>next());
 
 // ====== Background & Effects ======
-function bg(){ const g=ctx.createLinearGradient(0,0,0,canvas.height); g.addColorStop(0,flags.sky==='red'?'#800000':'#0a0b1c'); g.addColorStop(1,flags.sky==='red'?'#400000':'#000'); ctx.fillStyle=g; ctx.fillRect(0,0,canvas.width,canvas.height); }
-function lightning(intensity=1){ ctx.strokeStyle='rgba(200,220,255,.95)'; ctx.lineWidth=2; const n=Math.ceil(intensity*3); for(let k=0;k<n;k++){ ctx.beginPath(); let x=cx()+Math.sin(t*2+k)*120,y=0; ctx.moveTo(x,y); while(y<canvas.height){ x+=(Math.random()-.5)*50; y+=Math.random()*45+25; ctx.lineTo(x,y);} ctx.stroke(); } }
-function aura(r,alpha){ ctx.beginPath(); ctx.arc(cx(),cy(),r+(Math.sin(t*2)*10),0,Math.PI*2); ctx.fillStyle=`rgba(255,215,0,${alpha})`; ctx.fill(); }
+function bg(){ 
+  const g=ctx.createLinearGradient(0,0,0,canvas.height);
+  g.addColorStop(0,flags.sky==='red'?'#800000':'#0a0b1c');
+  g.addColorStop(1,flags.sky==='red'?'#400000':'#000');
+  ctx.fillStyle=g; ctx.fillRect(0,0,canvas.width,canvas.height); 
+}
+function lightning(intensity=1){
+  ctx.strokeStyle='rgba(200,220,255,.95)'; ctx.lineWidth=2;
+  const n=Math.ceil(intensity*3);
+  for(let k=0;k<n;k++){
+    ctx.beginPath();
+    let x=cx()+Math.sin(t*2+k)*120,y=0;
+    ctx.moveTo(x,y);
+    while(y<canvas.height){
+      x+=(Math.random()-.5)*50; y+=Math.random()*45+25; ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+}
+function aura(r,alpha){
+  ctx.beginPath();
+  ctx.arc(cx(),cy(),r+(Math.sin(t*2)*10),0,Math.PI*2);
+  ctx.fillStyle=`rgba(255,215,0,${alpha})`; ctx.fill();
+}
 
 // ====== Character: Clothing (Gohan Gi) ======
 function drawGi(){
@@ -53,9 +75,8 @@ function drawGi(){
   ctx.fillRect(cx()+4,  cy()+30, 26, 8);
 }
 
-// ====== Character: Head (Face + Eyes + Nose + Mouth + Eyebrows + Blood) ======
+// ====== Character: Head ======
 function head(anger=0,ssj2=false){
-  // 얼굴
   ctx.beginPath();
   ctx.ellipse(cx(), cy()-108, 18, 22, 0, 0, Math.PI*2);
   ctx.fillStyle='#f1c27d'; ctx.fill();
@@ -119,19 +140,19 @@ function caption(text){ ctx.save(); ctx.globalAlpha=.94; ctx.fillStyle='rgba(0,0
 function wrap(text,x,y,w,l){ const words=text.split(' '); let line=''; let yy=y; for(let i=0;i<words.length;i++){ const test=line+words[i]+' '; if(ctx.measureText(test).width>w){ ctx.fillText(line,x,yy); line=words[i]+' '; yy+=l; } else line=test; } ctx.fillText(line,x,yy); }
 
 // ====== Scenes ======
-let slowFrames=0;
 const SCENES=[
   { run(){ flags.sky='dark'; draw(false,0,0); caption('오반\n내가 좋아했던'); } },
   { run(){ draw(false,0,0); caption('오반\n자연과 동물들을'); } },
   { run(){ draw(false,0,0); caption('오반\n지.켜.주.거.라.'); } },
   { run(){ draw(false,0,0); caption('오반\n부탁한다~'); } },
-  { run(){ energy=100; shake=8; draw(true,.4,2); lightning(2.5); caption('초사이어인 2. 황금빛 오라와 번개가 전장을 뒤덮는다.'); } },
+  { run(){ flags.sky='red'; awakened=true; draw(true,.4,2); lightning(2.5); caption('초사이어인 2. 황금빛 오라와 번개가 전장을 뒤덮는다.'); } },
   { run(){ draw(true,.36,1); caption('손오공\n오반!'); } },
   { run(){ draw(true,.36,1); caption('피콜로\n드디어… 오반의 분노의 한계가 넘은 것인가?'); } }
 ];
 
 // ====== Draw ======
 function draw(ssj2=false,auraAlpha=0,anger=0){
+  ctx.clearRect(0,0,canvas.width,canvas.height); // <-- 필수: 화면 초기화
   ctx.save();
   ctx.scale(SCALE,SCALE);
   if(shake) ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
