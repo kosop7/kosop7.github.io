@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>Dragon Ball – Full Body Neutral Study</title>
+<title>Dragon Ball – Canvas Character Study</title>
 <style>
 body{
   margin:0;
@@ -13,9 +13,10 @@ body{
 canvas{
   display:block;
   margin:20px auto;
-  background:linear-gradient(#cfd8dc,#b0bec5);
+  background:linear-gradient(#e0f2f1,#b2dfdb);
   border-radius:18px;
   box-shadow:0 0 60px rgba(0,0,0,.25);
+  cursor:pointer;
 }
 </style>
 </head>
@@ -25,6 +26,12 @@ canvas{
 
 <script>
 const ctx = c.getContext("2d");
+let angry = false;
+
+c.addEventListener("click",()=>{
+  angry = !angry;
+  draw();
+});
 
 /* ===== BASIC SHAPES ===== */
 function circle(x,y,r,c){
@@ -40,14 +47,32 @@ function face(x,y,skin){
   circle(x,y,52,skin);
 
   // eyes
-  rect(x-18,y-6,12,6,"#000");
-  rect(x+6,y-6,12,6,"#000");
+  if(버럭){
+    ctx.strokeStyle="#000";
+    ctx.lineWidth=4;
+    ctx.beginPath();
+    ctx.moveTo(x-22,y-6); ctx.lineTo(x-6,y-12);
+    ctx.moveTo(x+22,y-6); ctx.lineTo(x+6,y-12);
+    ctx.stroke();
+  }else{
+    rect(x-18,y-6,12,6,"#000");
+    rect(x+6,y-6,12,6,"#000");
+  }
 
   // nose
   rect(x-2,y+4,4,10,"rgba(0,0,0,.25)");
 
   // mouth
-  rect(x-10,y+24,20,3,"#000");
+  if(버럭){
+    ctx.strokeStyle="#000";
+    ctx.lineWidth=4;
+    ctx.beginPath();
+    ctx.moveTo(x-14,y+26);
+    ctx.lineTo(x+14,y+22);
+    ctx.stroke();
+  }else{
+    rect(x-10,y+24,20,3,"#000");
+  }
 }
 
 /* ===== LIMBS ===== */
@@ -62,78 +87,77 @@ function legs(x,y,pants){
 
 /* ===== HAIR ===== */
 
-// Goku / Gohan spikes (forehead start)
-function spikyHair(x,y,color,scale=1){
+// Goku / Gohan spikes (front layer)
+function spikyHairFront(x,y,color,scale=1){
   ctx.fillStyle=color;
   ctx.beginPath();
-  ctx.moveTo(x-55*scale,y-35);
-  ctx.lineTo(x-40*scale,y-110*scale);
-  ctx.lineTo(x-10*scale,y-70*scale);
-  ctx.lineTo(x+10*scale,y-120*scale);
-  ctx.lineTo(x+40*scale,y-75*scale);
-  ctx.lineTo(x+55*scale,y-35);
+  ctx.moveTo(x-55*scale,y-20);
+  ctx.lineTo(x-45*scale,y-95*scale);
+  ctx.lineTo(x-15*scale,y-55*scale);
+  ctx.lineTo(x,y-105*scale);
+  ctx.lineTo(x+15*scale,y-60*scale);
+  ctx.lineTo(x+45*scale,y-95*scale);
+  ctx.lineTo(x+55*scale,y-20);
   ctx.closePath();
   ctx.fill();
 }
 
 // Android 16 mohawk
-function flatMohawk(x,y,color){
-  rect(x-65,y-85,130,30,color);
-  rect(x-45,y-115,90,35,color);
+function flatMohawkFront(x,y,color){
+  rect(x-65,y-80,130,30,color);
+  rect(x-45,y-110,90,35,color);
 }
 
 // Cell crown
-function cellCrown(x,y){
+function cellCrownFront(x,y){
   ctx.fillStyle="#0b0b0b";
   ctx.beginPath();
-  ctx.moveTo(x-55,y-40);
-  ctx.lineTo(x,y-130);
-  ctx.lineTo(x+55,y-40);
+  ctx.moveTo(x-55,y-30);
+  ctx.lineTo(x,y-120);
+  ctx.lineTo(x+55,y-30);
   ctx.closePath();
   ctx.fill();
 }
 
 // Piccolo antenna
-function piccoloAntenna(x,y){
+function piccoloAntennaFront(x,y){
   ctx.strokeStyle="#3fa85d";
   ctx.lineWidth=6;
   ctx.beginPath();
-  ctx.moveTo(x-18,y-50); ctx.lineTo(x-30,y-110);
-  ctx.moveTo(x+18,y-50); ctx.lineTo(x+30,y-110);
+  ctx.moveTo(x-18,y-45); ctx.lineTo(x-30,y-105);
+  ctx.moveTo(x+18,y-45); ctx.lineTo(x+30,y-105);
   ctx.stroke();
 }
 
-/* ===== GOHAN ===== */
+/* ===== CHARACTERS ===== */
 function gohan(x,y){
   arms(x,y,"#f2c9a5");
   legs(x,y,"#2e235f");
 
-  spikyHair(x,y,"#111",0.85);
   face(x,y,"#f2c9a5");
+  spikyHairFront(x,y,"#111",0.85);
 
   rect(x-45,y+55,90,170,"#5b3a8e");
   rect(x-45,y+135,90,12,"#2b1a45");
 }
 
-/* ===== ANDROID 16 ===== */
 function a16(x,y){
   arms(x,y,"#d8d8d8");
   legs(x,y,"#1b1b1b");
 
-  flatMohawk(x,y,"#ff7a00");
   face(x,y,"#d8d8d8");
+  flatMohawkFront(x,y,"#ff7a00");
 
   rect(x-55,y+55,110,180,"#4f6f2f");
   rect(x-55,y+135,110,14,"#111");
 }
 
-/* ===== CELL ===== */
 function cell(x,y){
   arms(x,y,"#3d7a4f");
   legs(x,y,"#2e5c3e");
 
-  cellCrown(x,y);
   face(x,y,"#b7c56b");
+  cellCrownFront(x,y);
 
   rect(x-50,y+55,100,180,"#3d7a4f");
 
@@ -142,36 +166,40 @@ function cell(x,y){
   }
 }
 
-/* ===== GOKU ===== */
 function goku(x,y){
   arms(x,y,"#f2c9a5");
   legs(x,y,"#ff7a18");
 
-  spikyHair(x,y,"#000",1.05);
   face(x,y,"#f2c9a5");
+  spikyHairFront(x,y,"#000",1.05);
 
   rect(x-50,y+55,100,180,"#ff7a18");
   rect(x-50,y+135,100,14,"#2346ff");
 }
 
-/* ===== PICCOLO ===== */
 function piccolo(x,y){
   arms(x,y,"#3fa85d");
   legs(x,y,"#3fa85d");
 
-  piccoloAntenna(x,y);
   face(x,y,"#3fa85d");
+  piccoloAntennaFront(x,y);
 
   rect(x-75,y+45,150,200,"#eee");
   rect(x-45,y+80,90,160,"#5b3a8e");
 }
 
-/* ===== DRAW ALL ===== */
-gohan(200,240);
-a16(500,240);
-cell(800,240);
-goku(1100,240);
-piccolo(1400,240);
+/* ===== DRAW ===== */
+function draw(){
+  ctx.clearRect(0,0,c.width,c.height);
+
+  gohan(200,240);
+  a16(500,240);
+  cell(800,240);
+  goku(1100,240);
+  piccolo(1400,240);
+}
+
+draw();
 </script>
 
 </body>
