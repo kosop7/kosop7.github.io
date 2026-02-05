@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>SSJ2 Awakening Ultimate</title>
+<title>SSJ2 Handoban Ultimate</title>
 <style>
 html,body{margin:0;padding:0;background:#000;overflow:hidden}
 canvas{display:block}
@@ -38,28 +38,19 @@ addEventListener('resize', resize);
 resize();
 
 let camera = {zoom:1, shake:0};
-let flags = {
-  sky:'dark',
-  ssj2:false,
-  lightning:false,
-  bird:false,
-  dust:false
-};
+let flags = {sky:'dark', ssj2:false, lightning:false, bird:false, dust:false};
 
-// 입체 먼지
+// 먼지 입체
 let dusts = [];
 for(let i=0;i<60;i++){
   dusts.push({x:Math.random()*innerWidth, y:Math.random()*innerHeight, r:Math.random()*5+2, dx:Math.random()*2-1, dy:Math.random()*2-1, alpha:Math.random()*0.5+0.2});
 }
 
-// 흰 새 애니
-let birdY = cy()-140;
-let birdDir = 1;
-let birdWing = 0;
+// 흰 새
+let birdY = 0, birdDir = 1, birdWing = 0;
 
-// 씬별 연출 타이머
-let animTime = 0;
-let animDuration = 1000; // ms 단위
+// 씬별 타이머
+let animTimeout;
 
 function cx(){return canvas.width/2;}
 function cy(){return canvas.height/2;}
@@ -96,10 +87,7 @@ function android16(){
   ctx.beginPath(); ctx.ellipse(cx()-150,cy(),42,48,0,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='#ff7a18'; ctx.fillRect(cx()-196,cy()-68,92,26);
   ctx.strokeStyle='red';
-  ctx.beginPath();
-  ctx.moveTo(cx()-170,cy()-20);
-  ctx.lineTo(cx()-130,cy()+20);
-  ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx()-170,cy()-20); ctx.lineTo(cx()-130,cy()+20); ctx.stroke();
 }
 
 // CELL
@@ -107,11 +95,9 @@ function cell(){
   ctx.fillStyle='#1c6';
   ctx.beginPath(); ctx.ellipse(cx()+180,cy()-20,50,80,0,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='#000';
-  ctx.beginPath();
-  ctx.moveTo(cx()+150,cy()-110); ctx.lineTo(cx()+210,cy()-110); ctx.lineTo(cx()+180,cy()-180); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(cx()+150,cy()-110); ctx.lineTo(cx()+210,cy()-110); ctx.lineTo(cx()+180,cy()-180); ctx.fill();
   ctx.strokeStyle='#1c6'; ctx.lineWidth=6;
-  ctx.beginPath();
-  ctx.moveTo(cx()+180,cy()+50); ctx.lineTo(cx()+220,cy()+120); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx()+180,cy()+50); ctx.lineTo(cx()+220,cy()+120); ctx.stroke();
 }
 
 // 손오반
@@ -121,31 +107,50 @@ function gohan(){
   ctx.fillRect(cx()-28,cy()-10,56,70);
   ctx.fillStyle='#2c6fd6';
   ctx.fillRect(cx()-30,cy()+28,60,10);
-  // 얼굴
+
+  // 얼굴 윤곽
   ctx.fillStyle='#f1c27d';
-  ctx.beginPath(); ctx.ellipse(cx(),cy()-46,18,22,0,0,Math.PI*2); ctx.fill();
-  // 머리카락 SSJ2
-  ctx.fillStyle= flags.ssj2 ? '#ffd94a' : '#f5d76e';
-  if(flags.ssj2){
-    for(let i=-2;i<=2;i++){
-      ctx.beginPath();
-      ctx.moveTo(cx(),cy()-90);
-      ctx.lineTo(cx()+i*12-20,cy()-50-i*3);
-      ctx.lineTo(cx()+i*12+20,cy()-50-i*3);
-      ctx.fill();
-    }
-  }else{
-    ctx.fillRect(cx()-22,cy()-76,44,28);
-  }
+  ctx.beginPath();
+  ctx.ellipse(cx(),cy()-46,18,22,0,0,Math.PI*2);
+  ctx.fill();
+
+  // 눈
+  ctx.fillStyle= flags.ssj2?'#00f':'#000';
+  ctx.beginPath(); ctx.ellipse(cx()-6,cy()-48,3,4,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx()+6,cy()-48,3,4,0,0,Math.PI*2); ctx.fill();
+  // 눈동자
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.arc(cx()-6,cy()-48,1.5,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx()+6,cy()-48,1.5,0,Math.PI*2); ctx.fill();
+  // 눈물
+  ctx.strokeStyle='rgba(0,150,255,0.8)';
+  ctx.beginPath(); ctx.moveTo(cx()-6,cy()-44); ctx.lineTo(cx()-6,cy()-38); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx()+6,cy()-44); ctx.lineTo(cx()+6,cy()-38); ctx.stroke();
+
+  // 코
+  ctx.strokeStyle='#e0b080';
+  ctx.beginPath(); ctx.moveTo(cx(),cy()-46); ctx.lineTo(cx(),cy()-42); ctx.stroke();
+
+  // 입
+  ctx.strokeStyle='#900';
+  ctx.beginPath(); ctx.moveTo(cx()-5,cy()-34); ctx.quadraticCurveTo(cx(),cy()-32,cx()+5,cy()-34); ctx.stroke();
+
   // 혈흔
-  if(flags.bird){
-    ctx.strokeStyle='red';
+  ctx.strokeStyle='red';
+  ctx.beginPath(); ctx.moveTo(cx()-4,cy()-58); ctx.lineTo(cx()-6,cy()-46); ctx.stroke();
+
+  // 머리카락
+  ctx.fillStyle= flags.ssj2 ? '#ffd94a' : '#f5d76e';
+  for(let i=-2;i<=2;i++){
+    let offset=i*6;
     ctx.beginPath();
-    ctx.moveTo(cx()-4,cy()-58);
-    ctx.lineTo(cx()-6,cy()-46);
-    ctx.stroke();
+    ctx.moveTo(cx(),cy()-90-offset);
+    ctx.lineTo(cx()-20-offset,cy()-50-offset);
+    ctx.lineTo(cx()+20+offset,cy()-50-offset);
+    ctx.fill();
   }
-  // 전기 오라 입체
+
+  // 전기 오라
   if(flags.lightning){
     for(let i=0;i<20;i++){
       ctx.strokeStyle='rgba(255,255,'+Math.floor(Math.random()*150)+','+Math.random()+')';
@@ -173,12 +178,12 @@ function zwarriors(){
 function bird(){
   if(!flags.bird) return;
   ctx.strokeStyle='#fff';
-  let wingOffset = Math.sin(birdWing)*8;
+  let wingOffset = Math.sin(Date.now()/100)*8;
   ctx.beginPath();
   ctx.moveTo(cx()-18,birdY);
   ctx.lineTo(cx()+18,birdY+wingOffset);
   ctx.stroke();
-  birdY += 0.8*birdDir; birdWing += 0.2;
+  birdY += 0.8*birdDir; 
   if(birdY>cy()-120||birdY<cy()-160) birdDir*=-1;
 }
 
@@ -195,7 +200,7 @@ function lightning(){
 }
 
 // DRAW
-function draw(timestamp){
+function draw(){
   ctx.setTransform(camera.zoom,0,0,camera.zoom,
     camera.shake?Math.random()*8-4:0,
     camera.shake?Math.random()*8-4:0);
@@ -223,7 +228,6 @@ const script=[
 ];
 
 let step=0;
-let animTimeout;
 
 // advance 씬 함수
 function advance(){
