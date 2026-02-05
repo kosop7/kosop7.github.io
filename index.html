@@ -6,16 +6,16 @@
 <style>
 body{
   margin:0;
-  background:#000;
+  background:#222;
   color:#fff;
   font-family:system-ui;
 }
 canvas{
   display:block;
   margin:20px auto;
-  background:linear-gradient(#060606,#0c0c0c);
+  background:linear-gradient(#cfd8dc,#b0bec5);
   border-radius:18px;
-  box-shadow:0 0 60px rgba(0,200,150,.15);
+  box-shadow:0 0 60px rgba(0,0,0,.25);
 }
 </style>
 </head>
@@ -35,7 +35,7 @@ function rect(x,y,w,h,c){
   ctx.fillStyle=c; ctx.fillRect(x,y,w,h);
 }
 
-/* ===== FACE (NEUTRAL) ===== */
+/* ===== FACE ===== */
 function face(x,y,skin){
   circle(x,y,52,skin);
 
@@ -60,46 +60,46 @@ function legs(x,y,pants){
   rect(x+2,y+220,26,130,pants);
 }
 
-/* ===== HAIR FUNCTIONS ===== */
+/* ===== HAIR ===== */
 
-// GOKU / GOHAN STYLE SPIKY HAIR
+// Goku / Gohan spikes (forehead start)
 function spikyHair(x,y,color,scale=1){
   ctx.fillStyle=color;
   ctx.beginPath();
-  ctx.moveTo(x-60*scale,y-10);
-  ctx.lineTo(x-40*scale,y-120*scale);
+  ctx.moveTo(x-55*scale,y-35);
+  ctx.lineTo(x-40*scale,y-110*scale);
   ctx.lineTo(x-10*scale,y-70*scale);
-  ctx.lineTo(x+10*scale,y-125*scale);
-  ctx.lineTo(x+40*scale,y-80*scale);
-  ctx.lineTo(x+60*scale,y-10);
+  ctx.lineTo(x+10*scale,y-120*scale);
+  ctx.lineTo(x+40*scale,y-75*scale);
+  ctx.lineTo(x+55*scale,y-35);
   ctx.closePath();
   ctx.fill();
 }
 
-// ANDROID 16 FLAT MOHAWK
+// Android 16 mohawk
 function flatMohawk(x,y,color){
-  rect(x-70,y-105,140,35,color);
-  rect(x-50,y-135,100,35,color);
+  rect(x-65,y-85,130,30,color);
+  rect(x-45,y-115,90,35,color);
 }
 
-// CELL BIO CROWN
+// Cell crown
 function cellCrown(x,y){
   ctx.fillStyle="#0b0b0b";
   ctx.beginPath();
-  ctx.moveTo(x-60,y-25);
-  ctx.lineTo(x,y-135);
-  ctx.lineTo(x+60,y-25);
+  ctx.moveTo(x-55,y-40);
+  ctx.lineTo(x,y-130);
+  ctx.lineTo(x+55,y-40);
   ctx.closePath();
   ctx.fill();
 }
 
-// PICCOLO ANTENNA
+// Piccolo antenna
 function piccoloAntenna(x,y){
   ctx.strokeStyle="#3fa85d";
   ctx.lineWidth=6;
   ctx.beginPath();
-  ctx.moveTo(x-18,y-55); ctx.lineTo(x-30,y-110);
-  ctx.moveTo(x+18,y-55); ctx.lineTo(x+30,y-110);
+  ctx.moveTo(x-18,y-50); ctx.lineTo(x-30,y-110);
+  ctx.moveTo(x+18,y-50); ctx.lineTo(x+30,y-110);
   ctx.stroke();
 }
 
@@ -111,7 +111,6 @@ function gohan(x,y){
   spikyHair(x,y,"#111",0.85);
   face(x,y,"#f2c9a5");
 
-  // gi
   rect(x-45,y+55,90,170,"#5b3a8e");
   rect(x-45,y+135,90,12,"#2b1a45");
 }
@@ -124,7 +123,6 @@ function a16(x,y){
   flatMohawk(x,y,"#ff7a00");
   face(x,y,"#d8d8d8");
 
-  // armor
   rect(x-55,y+55,110,180,"#4f6f2f");
   rect(x-55,y+135,110,14,"#111");
 }
@@ -137,10 +135,8 @@ function cell(x,y){
   cellCrown(x,y);
   face(x,y,"#b7c56b");
 
-  // exoskeleton
   rect(x-50,y+55,100,180,"#3d7a4f");
 
-  // bio spots
   for(let i=0;i<14;i++){
     circle(x-40+Math.random()*80,y+80+Math.random()*130,4,"#111");
   }
@@ -154,7 +150,6 @@ function goku(x,y){
   spikyHair(x,y,"#000",1.05);
   face(x,y,"#f2c9a5");
 
-  // gi
   rect(x-50,y+55,100,180,"#ff7a18");
   rect(x-50,y+135,100,14,"#2346ff");
 }
@@ -167,7 +162,6 @@ function piccolo(x,y){
   piccoloAntenna(x,y);
   face(x,y,"#3fa85d");
 
-  // cloak
   rect(x-75,y+45,150,200,"#eee");
   rect(x-45,y+80,90,160,"#5b3a8e");
 }
