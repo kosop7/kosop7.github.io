@@ -1,3 +1,4 @@
+/* style.css */
 * {
     margin: 0;
     padding: 0;
@@ -25,6 +26,7 @@ body {
     height: 100%;
 }
 
+/* UI 오버레이 스타일 */
 #ui-overlay {
     position: absolute;
     top: 0;
@@ -122,6 +124,7 @@ body {
     font-size: 0.9rem;
 }
 
+/* 대화창 스타일 */
 #dialogue-box {
     position: absolute;
     bottom: 2rem;
@@ -164,6 +167,7 @@ body {
     50% { transform: translateY(5px); }
 }
 
+/* 씬 인디케이터 */
 #scene-indicator {
     position: absolute;
     top: 2rem;
@@ -198,6 +202,7 @@ body {
     transition: width 0.5s ease;
 }
 
+/* 디버그 정보 */
 #debug-info {
     position: absolute;
     top: 10px;
@@ -209,6 +214,7 @@ body {
     font-family: monospace;
 }
 
+/* 유틸리티 클래스 */
 .hidden {
     display: none !important;
 }
