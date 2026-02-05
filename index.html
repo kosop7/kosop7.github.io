@@ -2,20 +2,26 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
 <title>SSJ2 Awakening</title>
 <style>
 html,body{margin:0;padding:0;background:#000;overflow:hidden}
 canvas{display:block}
 #dialogue{
-  position:fixed;left:50%;bottom:4%;
+  position:fixed;
+  left:50%;
+  bottom:4%;
   transform:translateX(-50%);
-  width:90%;max-width:560px;
-  background:rgba(0,0,0,0.75);
+  width:90%;
+  max-width:560px;
+  background:rgba(0,0,0,0.85);
   color:#fff;
   padding:18px;
   border:2px solid #fff;
   font-size:18px;
+  line-height:1.5;
+  white-space:pre-line;
+  font-family:monospace;
 }
 </style>
 </head>
@@ -29,45 +35,67 @@ const ctx=canvas.getContext('2d');
 const dlg=document.getElementById('dialogue');
 
 function resize(){canvas.width=innerWidth;canvas.height=innerHeight}
-addEventListener('resize',resize);resize();
+addEventListener('resize',resize); resize();
 
 let camera={zoom:1,shake:0};
 let flags={
-  sky:'dark',ssj2:false,lightning:false,bird:false,
-  dust:false,zforce:false
+  sky:'dark',
+  ssj2:false,
+  lightning:false,
+  bird:false,
+  dust:false,
+  zforce:false
 };
 
+// ===== particle arrays =====
+let dusts = [];
+for(let i=0;i<40;i++){
+  dusts.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*5+2,dx:Math.random()*1-0.5,dy:Math.random()*1-0.5,alpha:Math.random()*0.5+0.2});
+}
+
+let birdY = cy()-140;
+let birdDir = 1;
+
+// ===== helper functions =====
 function cx(){return canvas.width/2}
 function cy(){return canvas.height/2}
 
 // ===== BACKGROUND =====
 function background(){
-  if(flags.sky==='red'){
-    ctx.fillStyle='#400';
-  }else{
-    ctx.fillStyle='#111';
-  }
+  let grd = ctx.createLinearGradient(0,0,0,canvas.height);
+  grd.addColorStop(0, flags.sky==='red'?'#800000':'#111');
+  grd.addColorStop(1, flags.sky==='red'?'#400000':'#111');
+  ctx.fillStyle = grd;
   ctx.fillRect(0,0,canvas.width,canvas.height);
 }
 
 // ===== DUST =====
 function dust(){
   if(!flags.dust) return;
-  for(let i=0;i<30;i++){
-    ctx.fillStyle='rgba(150,100,50,'+Math.random()*0.5+')';
+  for(let d of dusts){
+    ctx.fillStyle='rgba(150,100,50,'+d.alpha+')';
     ctx.beginPath();
-    ctx.arc(Math.random()*canvas.width, Math.random()*canvas.height, Math.random()*5+2,0,Math.PI*2);
+    ctx.arc(d.x,d.y,d.r,0,Math.PI*2);
     ctx.fill();
+    // move
+    d.x += d.dx;
+    d.y += d.dy;
+    if(d.x<0) d.x=canvas.width;
+    if(d.x>canvas.width) d.x=0;
+    if(d.y<0) d.y=canvas.height;
+    if(d.y>canvas.height) d.y=0;
   }
 }
 
 // ===== ANDROID 16 =====
 function android16(){
   ctx.fillStyle='#9aa36a';
-  ctx.beginPath();ctx.ellipse(cx()-150,cy(),42,48,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx()-150,cy(),42,48,0,0,Math.PI*2);
+  ctx.fill();
   ctx.fillStyle='#ff7a18';
   ctx.fillRect(cx()-196,cy()-68,92,26);
-  // 파손 표시
+  // 파손
   ctx.strokeStyle='red';
   ctx.beginPath();
   ctx.moveTo(cx()-170,cy()-20);
@@ -106,7 +134,7 @@ function gohan(){
 
   // head
   ctx.fillStyle='#f1c27d';
-  ctx.beginPath();ctx.ellipse(cx(),cy()-46,18,22,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx(),cy()-46,18,22,0,0,Math.PI*2); ctx.fill();
 
   // hair
   ctx.fillStyle= flags.ssj2 ? '#ffd94a' : '#f5d76e';
@@ -129,13 +157,13 @@ function gohan(){
     ctx.stroke();
   }
 
-  // electric aura
+  // electric aura 깜빡임
   if(flags.lightning){
-    for(let i=0;i<8;i++){
-      ctx.strokeStyle='yellow';
+    for(let i=0;i<12;i++){
+      ctx.strokeStyle='rgba(255,255,'+Math.floor(Math.random()*150)+','+Math.random()+')';
       ctx.beginPath();
-      ctx.moveTo(cx()+Math.random()*40-20,cy()-50);
-      ctx.lineTo(cx()+Math.random()*60-30,cy()+50);
+      ctx.moveTo(cx()+Math.random()*50-25,cy()-50);
+      ctx.lineTo(cx()+Math.random()*70-35,cy()+50);
       ctx.stroke();
     }
   }
@@ -143,7 +171,6 @@ function gohan(){
 
 // ===== Z WARRIORS =====
 function zwarriors(){
-  // 단순 실루엣
   ctx.fillStyle='#444';
   // 손오공
   ctx.fillRect(cx()-300,cy()+50,20,50);
@@ -151,6 +178,18 @@ function zwarriors(){
   ctx.fillRect(cx()-260,cy()+40,20,60);
   // 크리링
   ctx.fillRect(cx()-230,cy()+60,15,45);
+}
+
+// ===== WHITE BIRD =====
+function bird(){
+  if(!flags.bird) return;
+  ctx.strokeStyle='#fff';
+  ctx.beginPath();
+  ctx.moveTo(cx()-18,birdY);
+  ctx.lineTo(cx()+18,birdY);
+  ctx.stroke();
+  birdY += 0.8*birdDir;
+  if(birdY>cy()-120 || birdY<cy()-160) birdDir*=-1;
 }
 
 // ===== LIGHTNING =====
@@ -165,20 +204,12 @@ function lightning(){
   }
 }
 
-// ===== WHITE BIRD =====
-function bird(){
-  if(!flags.bird) return;
-  ctx.strokeStyle='#fff';
-  ctx.beginPath();
-  ctx.arc(cx(),cy()-140,18,0,Math.PI);
-  ctx.stroke();
-}
-
 // ===== DRAW =====
 function draw(){
   ctx.setTransform(camera.zoom,0,0,camera.zoom,
     camera.shake?Math.random()*8-4:0,
     camera.shake?Math.random()*8-4:0);
+
   background();
   dust();
   bird();
@@ -192,16 +223,16 @@ function draw(){
 
 // ===== SCRIPT =====
 const script=[
-  {t:'scene',txt:'내가 좋아했던'},
-  {t:'scene',txt:'자연과 동물들을'},
-  {t:'scene',txt:'지.켜.주.거.라.'},
-  {t:'scene',txt:'부탁한다~'},
+  {t:'scene',txt:'오반\n내가 좋아했던'},
+  {t:'scene',txt:'오반\n자연과 동물들을'},
+  {t:'scene',txt:'오반\n지.켜.주.거.라.'},
+  {t:'scene',txt:'오반\n부탁한다~'},
   {t:'event',e:'crush'},
-  {t:'scene',txt:'쓸데없는 참견이다'},
-  {t:'scene',txt:'실패작 녀석'},
+  {t:'scene',txt:'셀\n쓸데없는 참견이다'},
+  {t:'scene',txt:'셀\n실패작 녀석'},
   {t:'event',e:'awakening'},
-  {t:'scene',txt:'오반!'},
-  {t:'scene',txt:'드디어… 오반의 분노의 한계가 넘은 것인가?'},
+  {t:'scene',txt:'손오공\n오반!'},
+  {t:'scene',txt:'피콜로\n드디어… 오반의 분노의 한계가 넘은 것인가?'},
   {t:'event',e:'pure_fx'}
 ];
 
@@ -210,25 +241,14 @@ function advance(){
   if(step>=script.length) return;
   const s=script[step];
   if(s.t==='scene'){dlg.textContent=s.txt}
-  if(s.e==='crush'){
-    dlg.textContent='';
-    flags.bird=true;
-    flags.dust=true;
-  }
-  if(s.e==='awakening'){
-    dlg.textContent='';
-    flags.sky='red';
-    flags.lightning=true;
-    flags.ssj2=true;
-    camera.shake=1;
-    flags.dust=true;
-  }
-  if(s.e==='pure_fx'){dlg.textContent='';flags.lightning=true;flags.dust=true}
+  if(s.e==='crush'){dlg.textContent=''; flags.bird=true; flags.dust=true;}
+  if(s.e==='awakening'){dlg.textContent=''; flags.sky='red'; flags.lightning=true; flags.ssj2=true; camera.shake=1; flags.dust=true;}
+  if(s.e==='pure_fx'){dlg.textContent=''; flags.lightning=true; flags.dust=true;}
   step++;
 }
 
-addEventListener('click',advance);
-draw();advance();
+addEventListener('pointerdown',advance); // 모바일/터치 호환
+draw(); advance();
 </script>
 </body>
 </html>
