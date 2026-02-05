@@ -1,853 +1,196 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>각성 — index</title>
+<meta charset="UTF-8">
+<title>각성</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-  :root{
-    --bg:#0b0b0f;
-    --panel:#0f1720;
-    --text:#e6eef6;
-    --accent:#ffd166;
-    --danger:#ff4d6d;
-    --aura:#fff2b8;
-    --muted:rgba(255,255,255,0.08);
-  }
-  html,body{height:100%;margin:0;background:linear-gradient(180deg,#07101a 0%, #0b0b0f 60%);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;}
-  .stage{
-    position:relative;
-    height:100vh;
-    overflow:hidden;
-    display:grid;
-    place-items:center;
-    color:var(--text);
-  }
-
-  /* cinematic container */
-  .screen{
-    width:min(1150px,95vw);
-    height:min(640px,70vh);
-    background:linear-gradient(180deg, rgba(8,12,18,0.75), rgba(3,6,10,0.85));
-    border-radius:12px;
-    box-shadow:0 20px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.02);
-    position:relative;
-    overflow:hidden;
-    border:1px solid rgba(255,255,255,0.03);
-  }
-
-  /* canvas for global particle/lightning */
-  #fx-canvas{
-    position:absolute;left:0;top:0;width:100%;height:100%;z-index:10;pointer-events:none;
-  }
-
-  /* main scene svg */
-  .scene-svg{
-    position:absolute;left:0;top:0;width:100%;height:100%;z-index:5;
-    display:block;
-  }
-
-  /* subtitle / ui */
-  .ui{
-    position:absolute;left:0;right:0;bottom:18px;display:flex;justify-content:center;z-index:40;pointer-events:none;
-  }
-  .subtitles{
-    max-width:86%;
-    background:linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.35));
-    border-radius:8px;padding:14px 18px;font-size:20px;line-height:1.35;color:var(--text);
-    box-shadow:0 6px 18px rgba(0,0,0,0.6);
-    backdrop-filter: blur(6px);
-    border:1px solid rgba(255,255,255,0.03);
-    text-align:center;
-    font-weight:600;
-    letter-spacing:.3px;
-  }
-
-  /* anger gauge controls */
-  .hud{
-    position:absolute;left:18px;top:18px;z-index:45;color:var(--text);
-    display:flex;gap:12px;align-items:center;
-  }
-  .gauge-wrap{width:220px;background:rgba(0,0,0,0.25);padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,0.04)}
-  .gauge-bar{height:14px;background:linear-gradient(90deg,#223 0%, rgba(255,255,255,0.04) 100%);border-radius:8px;overflow:hidden}
-  .gauge-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--danger),var(--accent));box-shadow:0 0 10px rgba(255,0,80,0.15) inset;transition:width .08s linear;}
-  .hint{font-size:13px;opacity:0.85;color:#dfe8ff;margin-top:6px}
-
-  /* interaction overlay: catches touch/clicks */
-  .touch-layer{position:absolute;left:0;top:0;width:100%;height:100%;z-index:50;cursor:pointer}
-
-  /* cinematic transitions */
-  .red-sky{
-    position:absolute;left:0;top:0;width:100%;height:100%;z-index:15;pointer-events:none;
-    background:linear-gradient(180deg, rgba(255,50,60,0.0), rgba(255,30,40,0.0));
-    mix-blend-mode:screen;opacity:0;transition:opacity .45s linear;
-  }
-
-  /* long face shot overlay */
-  .long-face{
-    position:absolute;left:50%;top:16%;transform:translateX(-50%);z-index:30;pointer-events:none;
-    width:48%;max-width:520px;
-    filter:drop-shadow(0 20px 40px rgba(0,0,0,0.55));
-    opacity:0;transform-origin:center top;transition:opacity .6s ease, transform .6s ease;
-  }
-
-  /* UI buttons for dev/testing */
-  .controls{position:absolute;right:18px;top:18px;z-index:46;display:flex;gap:8px}
-  .btn{
-    background:rgba(255,255,255,0.04);border-radius:8px;padding:8px 10px;font-size:13px;border:1px solid rgba(255,255,255,0.03);color:var(--text);cursor:pointer
-  }
-
-  /* small responsive tweaks */
-  @media (max-width:720px){
-    .subtitles{font-size:16px;padding:12px}
-    .gauge-wrap{width:160px}
-    .long-face{width:68%}
-  }
-
-  /* subtle vignette */
-  .vignette{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:60;background-image:radial-gradient(ellipse at center, rgba(0,0,0,0) 40%, rgba(0,0,0,0.5) 100%);}
+html,body{
+  margin:0;
+  background:#05060a;
+  overflow:hidden;
+  color:#fff;
+  font-family:sans-serif;
+}
+canvas,svg{
+  position:absolute;
+  inset:0;
+}
+#ui{
+  position:fixed;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  width:80%;
+  height:10px;
+  background:#222;
+}
+#rage{
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg,#555,#ffd400);
+}
+#subtitle{
+  position:fixed;
+  bottom:60px;
+  width:100%;
+  text-align:center;
+  font-size:18px;
+  letter-spacing:2px;
+  opacity:0;
+  transition:opacity 0.6s;
+}
 </style>
 </head>
 <body>
-<div class="stage">
-  <div class="screen" id="screen">
-    <!-- FX canvas -->
-    <canvas id="fx-canvas"></canvas>
 
-    <!-- red sky tint (show when Cell taunts / when rage rises) -->
-    <div id="redSky" class="red-sky"></div>
+<canvas id="fx"></canvas>
 
-    <!-- stylized SVG scene (original SVG characters; not copying any existing IP art) -->
-    <svg class="scene-svg" id="sceneSVG" viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <defs>
-        <!-- soft radial glow -->
-        <radialGradient id="glow" cx="50%" cy="30%" r="60%">
-          <stop offset="0%" stop-color="#ffeaa7" stop-opacity="0.9"/>
-          <stop offset="70%" stop-color="#ffb86b" stop-opacity="0.06"/>
-          <stop offset="100%" stop-color="#000" stop-opacity="0"/>
-        </radialGradient>
+<svg id="gohan" viewBox="0 0 300 600">
+  <!-- Hair -->
+  <path id="hair"
+    d="M70 90 L110 20 L150 80 L190 20 L230 90 L210 150 L90 150 Z"
+    fill="#111"/>
 
-        <!-- aura filter -->
-        <filter id="aura" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="8" result="b"/>
-          <feColorMatrix in="b" type="matrix" values="1 0 0 0 0  0 0.95 0 0 0  0 0 0.6 0 0  0 0 0 1 0"/>
-          <feBlend in="SourceGraphic" mode="screen"/>
-        </filter>
+  <!-- Face -->
+  <ellipse cx="150" cy="150" rx="45" ry="55" fill="#f2c9a0"/>
 
-        <filter id="crt" x="0" y="0" width="100%" height="100%">
-          <feTurbulence baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="noise"/>
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="1" xChannelSelector="R" yChannelSelector="G"/>
-        </filter>
+  <!-- Brows -->
+  <line id="bl" x1="120" y1="130" x2="145" y2="130" stroke="#111" stroke-width="4"/>
+  <line id="br" x1="155" y1="130" x2="180" y2="130" stroke="#111" stroke-width="4"/>
 
-      </defs>
+  <!-- Eyes -->
+  <ellipse id="el" cx="135" cy="145" rx="6" ry="3" fill="#111"/>
+  <ellipse id="er" cx="165" cy="145" rx="6" ry="3" fill="#111"/>
 
-      <!-- background silhouettes -->
-      <rect x="0" y="0" width="1200" height="700" fill="url(#bgGrad)"></rect>
+  <!-- Tear -->
+  <path id="tear" d="M135 150 C130 180 130 200 135 230"
+        stroke="#8ecbff" stroke-width="2" fill="none" opacity="0"/>
 
-      <!-- ground -->
-      <rect x="0" y="520" width="1200" height="180" fill="#081016" opacity="0.9"></rect>
+  <!-- Bird -->
+  <path id="bird"
+    d="M-40 120 Q-20 110 0 120 Q20 110 40 120"
+    stroke="#fff" stroke-width="2" fill="none"
+    opacity="0"/>
 
-      <!-- 16호 silhouette (left) -->
-      <g id="android16" transform="translate(160,280) scale(0.95)">
-        <g id="android16-body">
-          <rect x="-80" y="-60" rx="10" ry="10" width="160" height="200" fill="#2b2f36"/>
-          <rect x="-60" y="-80" rx="8" width="120" height="28" fill="#1f2328"/>
-          <!-- simple face block -->
-          <rect x="-40" y="-120" width="80" height="60" rx="8" fill="#bcd7de"/>
-          <!-- eye led -->
-          <rect x="-12" y="-100" width="24" height="8" rx="4" fill="#7fe6a8" id="led16"/>
-        </g>
-      </g>
+  <!-- Body -->
+  <path d="M90 210 L210 210 L240 350 L60 350 Z" fill="#f58220"/>
+</svg>
 
-      <!-- Cell silhouette (right rear, imposing) -->
-      <g id="cell" transform="translate(980,220) scale(1.05)">
-        <g id="cell-body">
-          <ellipse cx="0" cy="120" rx="140" ry="140" fill="#0b1b15" opacity="0.98" />
-          <circle cx="0" cy="-40" r="70" fill="#132a21" />
-          <ellipse cx="0" cy="-45" rx="40" ry="22" fill="#08100b"/>
-        </g>
-      </g>
+<canvas id="glow"></canvas>
 
-      <!-- Main hero: '손오반' stylized (center-right) -->
-      <g id="oban" transform="translate(600,320)">
-        <!-- aura (behind) -->
-        <g id="auraGroup" filter="url(#aura)" opacity="0.12">
-          <ellipse cx="0" cy="30" rx="170" ry="120" fill="#ffea94" />
-        </g>
-
-        <!-- body silhouette -->
-        <g id="oban-body" transform="translate(0,40)">
-          <rect x="-58" y="0" width="116" height="170" rx="12" fill="#101218" />
-          <rect x="-64" y="-10" width="128" height="22" rx="10" fill="#2a2e34" />
-        </g>
-
-        <!-- head group -->
-        <g id="oban-head" transform="translate(0,-30)">
-          <!-- hair (multi-layer to allow color change) -->
-          <g id="hair" transform="translate(0,-8)">
-            <path id="hairBase" d="M-62,-6 C-45,-80 -5,-110 2,-88 C18,-110 60,-72 62,-6 C28,-6 20,6 2,6 C-16,6 -38,-4 -62,-6Z" fill="#0b0b0b" stroke="#060606" stroke-width="1.2"/>
-            <path id="hairSpikes" d="M-30,-40 L-44,-80 L-26,-60 L-8,-86 L2,-60 L20,-86 L36,-60 L24,-30 L-30,-40Z" fill="#0b0b0b"/>
-          </g>
-
-          <!-- face -->
-          <g id="face" transform="translate(0,6)">
-            <ellipse cx="0" cy="14" rx="46" ry="52" fill="#ffd9c7" stroke="#00000005"/>
-            <!-- eyes (separate states via groups) -->
-            <g id="eyes-neutral">
-              <path d="M-18,6 q8,4 16,0" fill="none" stroke="#222" stroke-width="3" stroke-linecap="round"/>
-              <path d="M18,6 q-8,4 -16,0" fill="none" stroke="#222" stroke-width="3" stroke-linecap="round"/>
-            </g>
-            <g id="eyes-shock" style="display:none">
-              <circle cx="-12" cy="6" r="6" fill="#fff"/>
-              <circle cx="12" cy="6" r="6" fill="#fff"/>
-            </g>
-            <g id="eyes-anger" style="display:none">
-              <path d="M-26,8 q10,-12 26,-6" fill="none" stroke="#120b0b" stroke-width="4" stroke-linecap="round"/>
-              <path d="M26,8 q-10,-12 -26,-6" fill="none" stroke="#120b0b" stroke-width="4" stroke-linecap="round"/>
-            </g>
-
-            <!-- mouth -->
-            <g id="mouth-neutral">
-              <path d="M-12,36 q12,8 24,0" stroke="#4a2216" stroke-width="3" fill="none" stroke-linecap="round"/>
-            </g>
-            <g id="mouth-sad" style="display:none">
-              <path d="M-12,36 q12,14 24,0" stroke="#4a2216" stroke-width="3" fill="none" stroke-linecap="round"/>
-            </g>
-            <g id="mouth-shout" style="display:none">
-              <path d="M-12,28 q12,18 24,0" stroke="#2a1212" stroke-width="3" fill="#3b0a0a" />
-            </g>
-
-            <!-- eyebrow (for anger) -->
-            <path id="brow-left" d="M-26,-6 q10,-6 18,-2" stroke="#120b0b" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.0"/>
-            <path id="brow-right" d="M26,-6 q-10,-6 -18,-2" stroke="#120b0b" stroke-width="4" stroke-linecap="round" fill="none" opacity="0.0"/>
-            <!-- forehead wound blood -->
-            <g id="wound" transform="translate(0,-6)" opacity="0">
-              <path id="blood" d="M6,-2 q-6,10 -2,22 q2,8 -6,18" fill="#8b0b0b" />
-            </g>
-
-            <!-- tear -->
-            <g id="tear" transform="translate(-10,10)" opacity="0">
-              <path d="M0,0 q4,12 0,24 q-4,-12 0,-24" fill="#bfe9ff" />
-            </g>
-          </g>
-        </g>
-      </g>
-
-      <!-- long-face portrait (for the final long shot) -->
-      <g id="longFace" class="long-face" transform="translate(110,10) scale(0.9)">
-        <rect x="0" y="0" width="380" height="420" rx="18" fill="linear-gradient(#111,#161616)" opacity="0.0"></rect>
-        <!-- simplified portrait drawn again but larger -->
-        <g transform="translate(190,120)" id="portrait">
-          <ellipse cx="0" cy="80" rx="120" ry="150" fill="#ffd9c7"/>
-          <path id="portrait-hair" d="M-120,-10 C-80,-150 -10,-220 0,-200 C15,-220 90,-146 120,-10 C72,-20 20,10 0,10 C-18,10 -44,-6 -120,-10Z" fill="#0b0b0b"/>
-          <g id="portrait-eyes">
-            <path d="M-58,40 q20,-30 56,-18" stroke="#120b0b" stroke-width="6" fill="none"/>
-            <path d="M58,40 q-20,-30 -56,-18" stroke="#120b0b" stroke-width="6" fill="none"/>
-          </g>
-          <path id="portrait-electric" d="M-140,10 C-100,90 -60,40 0,40 C60,40 120,100 160,10" stroke="#fff2b8" stroke-width="4" fill="none" opacity="0.0" />
-        </g>
-      </g>
-    </svg>
-
-    <!-- long face displayed separately in DOM for smoother CSS control -->
-    <div class="long-face" id="longFaceImg" aria-hidden="true">
-      <!-- inline SVG copy but simpler for performance -->
-      <svg viewBox="0 0 380 420" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
-        <defs>
-          <filter id="glow2"><feGaussianBlur stdDeviation="6" result="b"/><feBlend in="SourceGraphic" in2="b"/></filter>
-        </defs>
-        <rect x="0" y="0" width="380" height="420" rx="18" fill="#0c0c0d" opacity="0.65"></rect>
-        <g transform="translate(190,120)">
-          <ellipse cx="0" cy="80" rx="120" ry="150" fill="#ffd9c7"/>
-          <path d="M-120,-10 C-80,-150 -10,-220 0,-200 C15,-220 90,-146 120,-10 C72,-20 20,10 0,10 C-18,10 -44,-6 -120,-10Z" fill="#0b0b0b"/>
-          <path d="M-58,40 q20,-30 56,-18" stroke="#120b0b" stroke-width="6" fill="none"/>
-          <path d="M58,40 q-20,-30 -56,-18" stroke="#120b0b" stroke-width="6" fill="none"/>
-          <g id="portrait-electric" opacity="0">
-            <path d="M-140,10 C-100,90 -60,40 0,40 C60,40 120,100 160,10" stroke="#fff2b8" stroke-width="4" fill="none" />
-            <path d="M-100,-10 C-60,40 -20,0 20,20 C60,40 100,80 140,-10" stroke="#fff2b8" stroke-width="3" fill="none" />
-          </g>
-        </g>
-      </svg>
-    </div>
-
-    <!-- UI: gauge, hints -->
-    <div class="hud" aria-hidden="false">
-      <div class="gauge-wrap" aria-hidden="false">
-        <div style="font-size:12px;font-weight:700;color:#f7f7f7">분노 게이지</div>
-        <div class="gauge-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-          <div id="gaugeFill" class="gauge-fill" style="width:0%"></div>
-        </div>
-        <div class="hint" id="hintText">터치 또는 클릭으로 분노를 모아 각성하세요</div>
-      </div>
-    </div>
-
-    <!-- controls for testing -->
-    <div class="controls" style="pointer-events:auto;">
-      <button class="btn" id="autoBtn">자동 재생</button>
-      <button class="btn" id="resetBtn">리셋</button>
-    </div>
-
-    <!-- subtitle UI (exact quoted lines will appear here) -->
-    <div class="ui" aria-live="polite">
-      <div id="subtitleBox" class="subtitles" role="status" aria-atomic="true"></div>
-    </div>
-
-    <!-- interaction overlay -->
-    <div id="touchLayer" class="touch-layer" aria-hidden="false" title="터치나 클릭하여 분노를 모으세요"></div>
-
-    <!-- vignette -->
-    <div class="vignette"></div>
-  </div>
-</div>
+<div id="subtitle"></div>
+<div id="ui"><div id="rage"></div></div>
 
 <script>
-/*
-  index.html — cinematic + interactive anger-gauge -> awakening.
-  - Implements high-quality SVG character layers (stylized).
-  - Canvas particle & lightning system.
-  - WebAudio synthesized effects.
-  - Input: click/touch/space to increase anger gauge.
-  - When gauge reaches 100 -> awakening cinematic (long face shot + heavy effects).
-  - All quoted lines from user are displayed verbatim (unchanged).
-*/
+const fx = document.getElementById("fx");
+const ctx = fx.getContext("2d");
+fx.width = innerWidth;
+fx.height = innerHeight;
 
-/* ----------------------------
-   Configuration & Elements
-   ---------------------------- */
-const QUOTES = [
-  // exact user-provided quoted strings (used verbatim)
-  "\"오반 \"",
-  "\"내가 좋아했던 \"",
-  "\"자연과 동물들을\"",
-  "\"지.켜.주.거.라. \"",
-  "\"부탁한다~ \"",
-  // taunt lines
-  "\"쓸데없는 참견이다 \"",
-  "\"실패작 녀석 \"",
-  // final lines
-  "\"드디어 \"",
-  "\"오반의 분노의 한계가 넘은 것인가? \""
-];
+let rage = 0;
+let shaking = false;
+let speechDone = false;
 
-const screen = document.getElementById('screen');
-const fxCanvas = document.getElementById('fx-canvas');
-const ctx = fxCanvas.getContext('2d', { alpha: true });
-const subtitleBox = document.getElementById('subtitleBox');
-const gaugeFill = document.getElementById('gaugeFill');
-const hintText = document.getElementById('hintText');
-const touchLayer = document.getElementById('touchLayer');
-const redSky = document.getElementById('redSky');
-const longFace = document.getElementById('longFaceImg');
-const portraitElectric = longFace.querySelector('#portrait-electric');
+const rageBar = document.getElementById("rage");
+const el = document.getElementById("el");
+const er = document.getElementById("er");
+const tear = document.getElementById("tear");
+const hair = document.getElementById("hair");
+const subtitle = document.getElementById("subtitle");
+const bird = document.getElementById("bird");
 
-let W = fxCanvas.width = screen.clientWidth;
-let H = fxCanvas.height = screen.clientHeight;
+function updateFace(){
+  tear.style.opacity = 0;
+  if(rage<25){
+    el.setAttribute("ry",3.5);
+  }else if(rage<50){
+    el.setAttribute("ry",2.5);
+    tear.style.opacity=1;
+  }else if(rage<75){
+    el.setAttribute("ry",2);
+  }else{
+    el.setAttribute("ry",2);
+    hair.setAttribute("fill","#ffd400");
+    shaking=true;
+  }
 
-/* responsive canvas on resize */
-window.addEventListener('resize', () => {
-  W = fxCanvas.width = screen.clientWidth;
-  H = fxCanvas.height = screen.clientHeight;
-});
-
-/* state */
-let anger = 0;           // 0..100
-let lastTap = 0;
-let taps = 0;
-let isAwakened = false;
-let autoPlay = false;
-let particles = [];
-let bolts = [];
-let time = 0;
-
-/* Audio */
-let audioCtx = null;
-function ensureAudio(){
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if(rage>60 && !speechDone){
+    triggerSpeech();
+    speechDone=true;
   }
 }
 
-/* create simple FX: thump (for tap), rumble (for awakening), zap (electric) */
-function playTap(){
-  ensureAudio();
-  const o = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
-  o.type = 'sine';
-  o.frequency.value = 120;
-  g.gain.value = 0.02;
-  o.connect(g); g.connect(audioCtx.destination);
-  o.start();
-  o.frequency.setValueAtTime(120, audioCtx.currentTime);
-  o.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.09);
-  g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.12);
-  o.stop(audioCtx.currentTime + 0.13);
-}
-function playZap(){
-  ensureAudio();
-  const o = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
-  o.type = 'square';
-  o.frequency.value = 800;
-  g.gain.value = 0.04;
-  o.connect(g); g.connect(audioCtx.destination);
-  o.start();
-  o.frequency.exponentialRampToValueAtTime(260, audioCtx.currentTime + 0.12);
-  g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.18);
-  o.stop(audioCtx.currentTime + 0.19);
-}
-function playRumble(){
-  ensureAudio();
-  const o = audioCtx.createOscillator();
-  const b = audioCtx.createBiquadFilter();
-  const g = audioCtx.createGain();
-  o.type = 'sawtooth';
-  o.frequency.value = 60;
-  b.type = 'lowpass';
-  b.frequency.value = 120;
-  g.gain.value = 0.06;
-  o.connect(b); b.connect(g); g.connect(audioCtx.destination);
-  o.start();
-  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
-  o.stop(audioCtx.currentTime + 1.25);
-}
+function triggerSpeech(){
+  const lines=[
+    `"자연과 동물들을"`,
+    `"지.켜.주.거.라."`,
+    `"부탁한다~"`
+  ];
 
-/* ----------------------------
-   Subtitle / timeline helpers
-   ---------------------------- */
-let timeline = [];
-let tlIndex = 0;
-function pushLine(text, delay=0.8){
-  timeline.push({type:'line', text, delay});
-}
-function pushAction(fn, delay=0.0){
-  timeline.push({type:'action', fn, delay});
-}
-
-/* Build a simple timeline sequence that follows user's scene directions */
-function buildTimeline(){
-  timeline = [];
-  // 16호 speaks (these are the quoted lines 0..4)
-  pushLine(QUOTES[0], 1.2); // "오반 "
-  pushLine(QUOTES[1], 0.9); // "내가 좋아했던 "
-  pushLine(QUOTES[2], 0.9); // "자연과 동물들을"
-  pushLine(QUOTES[3], 1.1); // "지.켜.주.거.라. "
-  pushLine(QUOTES[4], 1.3); // "부탁한다~ "
-  // 16호 짓밟힘 action
-  pushAction(()=> {
-    // spawn shrapnel particles left
-    spawnBurst(140, 340, '#9fb3c6', 24);
-    showRedSky(false);
-    // small camera shake
-    shake(10, 350);
-    // show led fade on 16
-    const led = document.getElementById('led16');
-    led.animate([{ fill: '#7fe6a8' }, { fill: '#4a9f70' }, { fill: '#00000022' }], { duration: 700, fill:'forwards' });
-  }, 0.6);
-
-  // Cell taunts
-  pushLine(QUOTES[5], 0.8); // "쓸데없는 참견이다 "
-  pushLine(QUOTES[6], 0.9); // "실패작 녀석 "
-  pushAction(()=> {
-    // red sky appears stronger
-    showRedSky(true);
-    spawnBurst(920, 260, '#ff4d6d', 16);
-    playZap();
-  }, 0.3);
-
-  // near instant after taunt: oban sees white bird & forehead wound -> tears
-  pushAction(()=> {
-    // simulate white bird overlay by quick flash near eyes
-    flashWhiteBird();
-    // show wound and tear
-    showWound(true);
-    showTear(true);
-  }, 0.5);
-
-  // crowd cries "오반!" — we simulate with subtitle and a sound
-  pushAction(()=> {
-    subtitleBox.textContent = "누가 \"오반!\" 이라 소리친다";
-    playTap();
-    setTimeout(()=> subtitleBox.textContent = '', 1100);
-  }, 0.5);
-
-  // anger starts to build (pause visible)
-  pushAction(()=> {
-    subtitleBox.textContent = '';
-    hintText.textContent = "터치(혹은 클릭)으로 분노를 모으세요";
-  }, 0.6);
-
-  // now we wait for user input to fill gauge. Automode will fill gradually.
-  // after awakened we'll play final lines
-  // final taunt/observer commentary before showing long face
-  pushLine(QUOTES[7], 0.9); // "드디어 "
-  pushLine(QUOTES[8], 1.6); // "오반의 분노의 한계가 넘은 것인가? "
-  // long face reveal action
-  pushAction(()=> {
-    showLongFaceShot(true);
-    spawnBurst(600, 150, '#fff2b8', 60);
-    playRumble();
-    // increase aura
-    document.getElementById('auraGroup').animate([{opacity:.15},{opacity:.85}],{duration:700, fill:'forwards'});
-    // portrait electricity
-    portraitElectric && (portraitElectric.style.opacity = '1');
-  }, 0.7);
-}
-
-/* run timeline (non-blocking) */
-function playTimeline(){
-  if (!timeline || timeline.length===0) return;
-  tlIndex = 0;
-  let t = 0;
-  function step(){
-    if (tlIndex >= timeline.length) return;
-    const item = timeline[tlIndex++];
-    if (item.type === 'line'){
-      subtitleBox.textContent = item.text;
-      // a little audio feedback for lines
-      playZap();
-      setTimeout(()=> {
-        subtitleBox.textContent = '';
-        setTimeout(step, (item.delay || 0.6)*800);
-      }, 900);
-    } else if (item.type === 'action'){
-      item.fn && item.fn();
-      setTimeout(step, (item.delay || 0.6)*900);
+  let i=0;
+  function next(){
+    if(i>=lines.length){
+      subtitle.style.opacity=0;
+      return;
     }
+    subtitle.textContent=lines[i];
+    subtitle.style.opacity=1;
+
+    if(i===1) flyBird();
+
+    setTimeout(()=>{
+      subtitle.style.opacity=0;
+      i++;
+      setTimeout(next,600);
+    },1500);
   }
-  step();
+  next();
 }
 
-/* ----------------------------
-   Particle / lightning FX
-   ---------------------------- */
-function rand(min,max){ return Math.random()*(max-min)+min; }
-
-function spawnBurst(x,y,color,n=18){
-  for (let i=0;i<n;i++){
-    particles.push({
-      x:x + rand(-12,12),
-      y:y + rand(-12,12),
-      vx: rand(-2,2),
-      vy: rand(-6,-1),
-      life: rand(60,120),
-      size: rand(2,8),
-      col: color
-    });
-  }
-}
-
-function spawnElectricBolt(x1,y1,x2,y2){
-  bolts.push({
-    x1,y1,x2,y2,t:0,d:1.0
-  });
-  playZap();
-}
-
-function updateFX(dt){
-  // particles
-  for (let i=particles.length-1;i>=0;i--){
-    const p = particles[i];
-    p.x += p.vx;
-    p.y += p.vy;
-    p.vy += 0.18; // gravity
-    p.life--;
-    p.size *= 0.995;
-    if (p.life<=0 || p.size<0.3) particles.splice(i,1);
-  }
-  // bolts decay
-  for (let i=bolts.length-1;i>=0;i--){
-    const b = bolts[i];
-    b.t += dt*0.016;
-    if (b.t>1.0) bolts.splice(i,1);
-  }
-}
-
-function drawFX(){
-  ctx.clearRect(0,0,W,H);
-  ctx.save();
-  // additive composite for glow
-  ctx.globalCompositeOperation = 'lighter';
-
-  // particle draw
-  for (let p of particles){
-    ctx.beginPath();
-    const g = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.size*5);
-    g.addColorStop(0, p.col);
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(p.x-p.size*3, p.y-p.size*3, p.size*6, p.size*6);
-    ctx.closePath();
-  }
-
-  // electric bolts
-  for (let b of bolts){
-    const intensity = 1 - b.t;
-    ctx.lineWidth = 1 + 6*intensity;
-    ctx.strokeStyle = `rgba(255,242,184,${0.7*intensity})`;
-    ctx.beginPath();
-    // draw jagged lightning
-    const steps = 20;
-    for (let s=0;s<=steps;s++){
-      const t = s/steps;
-      const x = b.x1 + (b.x2-b.x1)*t + Math.sin((t+time*0.02)*40)*4*(1-t);
-      const y = b.y1 + (b.y2-b.y1)*t + Math.cos((t+time*0.03)*40)*3*(t);
-      if (s===0) ctx.moveTo(x,y);
-      else ctx.lineTo(x,y);
+function flyBird(){
+  let x=-40;
+  bird.style.opacity=1;
+  const fly=setInterval(()=>{
+    x+=3;
+    bird.setAttribute("transform",`translate(${x} 0)`);
+    if(x>340){
+      clearInterval(fly);
+      bird.style.opacity=0;
     }
+  },16);
+}
+
+function electric(){
+  if(!shaking)return;
+  ctx.clearRect(0,0,fx.width,fx.height);
+  for(let i=0;i<4;i++){
+    ctx.strokeStyle="rgba(255,220,0,0.7)";
+    ctx.beginPath();
+    ctx.moveTo(Math.random()*fx.width,0);
+    ctx.lineTo(Math.random()*fx.width,fx.height);
     ctx.stroke();
   }
-
-  ctx.restore();
 }
 
-/* main loop */
-let lastFrame = performance.now();
-function loop(now){
-  const dt = (now - lastFrame);
-  lastFrame = now;
-  time += dt*0.001;
-  updateFX(dt);
-  drawFX();
-  // gauge idle drain
-  if (!isAwakened && !autoPlay){
-    anger = Math.max(0, anger - 0.01*dt*0.02);
-    updateGaugeUI();
-  }
+document.body.addEventListener("pointerdown",()=>{
+  rage=Math.min(100,rage+4);
+  rageBar.style.width=rage+"%";
+  updateFace();
+});
+
+setInterval(()=>{
+  rage=Math.max(0,rage-0.5);
+  rageBar.style.width=rage+"%";
+  updateFace();
+},100);
+
+function loop(){
+  electric();
   requestAnimationFrame(loop);
 }
-requestAnimationFrame(loop);
-
-/* ----------------------------
-   Interaction logic
-   ---------------------------- */
-function increaseAnger(amount=3, fromX=null, fromY=null){
-  if (isAwakened) return;
-  anger = Math.min(100, anger + amount);
-  updateGaugeUI();
-  // spawn local electric sparks near oban when anger increased
-  const rect = screen.getBoundingClientRect();
-  const cx = rect.left + rect.width*0.48 + (fromX? (fromX-rect.left) : (Math.random()*200-100));
-  const cy = rect.top + rect.height*0.35 + (fromY? (fromY-rect.top) : (Math.random()*60-30));
-  spawnBurst(cx, cy, '#fff2b8', Math.max(6, Math.floor(amount*2)));
-  spawnElectricBolt(cx-40, cy-80, cx+30, cy-10);
-  // audio
-  playTap();
-
-  // small visual feedback
-  screen.animate([{ transform:'translateY(0px)' }, { transform:'translateY(-6px)' }, { transform:'translateY(0px)' }], { duration:220, easing:'cubic-bezier(.2,.9,.3,1)' });
-
-  // update hint and triggers
-  if (anger>=60 && anger<100){
-    hintText.textContent = "임계점 근접 — 계속 터치하세요!";
-    // intensify red sky a bit
-    redSky.style.opacity = Math.min(0.34, 0.08 + (anger-40)/220);
-  } else if (anger>=100){
-    triggerAwaken();
-  } else {
-    hintText.textContent = "터치 또는 클릭으로 분노를 모아 각성하세요";
-  }
-}
-
-touchLayer.addEventListener('pointerdown', (ev)=>{
-  // count tap velocity
-  const now = performance.now();
-  taps++;
-  const delta = Math.max(1, now - lastTap);
-  lastTap = now;
-  // dynamic amount: faster taps yield more anger
-  const charge = Math.min(12, Math.max(3, 220/delta));
-  increaseAnger(charge, ev.clientX, ev.clientY);
-});
-
-window.addEventListener('keydown', (e)=>{
-  if (e.code === 'Space') {
-    e.preventDefault();
-    increaseAnger(6);
-  }
-});
-
-/* dev controls */
-document.getElementById('autoBtn').addEventListener('click', ()=> {
-  autoPlay = !autoPlay;
-  document.getElementById('autoBtn').textContent = autoPlay ? '자동 해제' : '자동 재생';
-  if (autoPlay) autoFill();
-});
-document.getElementById('resetBtn').addEventListener('click', resetAll);
-
-/* auto fill for demo */
-function autoFill(){
-  if (!autoPlay || isAwakened) return;
-  increaseAnger(rand(2,6));
-  setTimeout(autoFill, 140 + Math.random()*200);
-}
-
-/* update gauge UI */
-function updateGaugeUI(){
-  gaugeFill.style.width = anger + '%';
-  gaugeFill.setAttribute('aria-valuenow', String(Math.round(anger)));
-}
-
-/* ----------------------------
-   Awakening sequence
-   ---------------------------- */
-function triggerAwaken(){
-  if (isAwakened) return;
-  isAwakened = true;
-  autoPlay = false;
-  hintText.textContent = "각성!";
-  // visual: hair color change, eyes -> anger, brows show, mouth shout
-  const hair = document.getElementById('hairBase');
-  hair.animate([{ fill:'#0b0b0b' }, { fill:'#ffd166' }, { fill:'#fff59a' }], { duration:520, fill:'forwards' });
-  document.getElementById('hairSpikes').animate([{ fill:'#0b0b0b' }, { fill:'#ffd166' }], { duration:520, fill:'forwards' });
-  // eyes: from neutral to anger
-  document.getElementById('eyes-neutral').style.display = 'none';
-  document.getElementById('eyes-shock').style.display = 'none';
-  document.getElementById('eyes-anger').style.display = 'block';
-  // brows appear
-  document.getElementById('brow-left').style.opacity = '1';
-  document.getElementById('brow-right').style.opacity = '1';
-  // mouth shout
-  document.getElementById('mouth-neutral').style.display = 'none';
-  document.getElementById('mouth-shout').style.display = 'block';
-  // wound & tear vanish at eaching (simulating suppressed pain) after short delay
-  setTimeout(()=> { showWound(false); showTear(false); }, 180);
-
-  // aura intensifies (canvas bolts)
-  const rect = screen.getBoundingClientRect();
-  for (let i=0;i<8;i++){
-    spawnElectricBolt(rect.left + rect.width*0.45 + rand(-60,60), rect.top + rect.height*0.2 + rand(-40,40),
-                      rect.left + rect.width*0.55 + rand(-60,60), rect.top + rect.height*0.05 + rand(-40,40));
-  }
-  playRumble();
-  // camera zoom
-  screen.animate([{ transform:'scale(1)' }, { transform:'scale(1.02)' }, { transform:'scale(1)'}], { duration:800, easing:'cubic-bezier(.2,.9,.3,1)' });
-
-  // show long face portrait (final reveal) with extended duration
-  setTimeout(()=> {
-    showLongFaceShot(true);
-    // play long timeline final lines
-    setTimeout(()=> {
-      subtitleBox.textContent = QUOTES[7]; // "드디어 "
-      playZap();
-      setTimeout(()=> {
-        subtitleBox.textContent = QUOTES[8]; // "오반의 분노의 한계가 넘은 것인가? "
-        playRumble();
-        setTimeout(()=> subtitleBox.textContent = '', 1600);
-      }, 900);
-    }, 300);
-  }, 420);
-
-  // final: energetic particle storm
-  const cx = rect.left + rect.width*0.5;
-  const cy = rect.top + rect.height*0.38;
-  spawnBurst(cx, cy, '#fff2b8', 120);
-  setTimeout(()=> spawnBurst(cx, cy, '#ffb86b', 80), 120);
-}
-
-/* show/hide wound & tear */
-function showWound(on){
-  const w = document.getElementById('wound');
-  if (on){
-    w.style.opacity = '1';
-    w.animate([{opacity:0},{opacity:1}],{duration:200,fill:'forwards'});
-  } else {
-    w.animate([{opacity:1},{opacity:0}],{duration:300,fill:'forwards'});
-    setTimeout(()=> w.style.opacity='0', 320);
-  }
-}
-function showTear(on){
-  const t = document.getElementById('tear');
-  if (on){
-    t.style.opacity = '1';
-    t.animate([{transform:'translateY(-6px)', opacity:0},{transform:'translateY(0px)', opacity:1}],{duration:450,fill:'forwards', easing:'cubic-bezier(.3,.9,.2,1)'});
-  } else {
-    t.animate([{transform:'translateY(0px)', opacity:1},{transform:'translateY(10px)', opacity:0}],{duration:350,fill:'forwards'});
-    setTimeout(()=> t.style.opacity='0', 360);
-  }
-}
-
-/* flash white bird (simulated overlay) */
-function flashWhiteBird(){
-  // quick white arc near oban eyes
-  const svg = document.getElementById('sceneSVG');
-  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
-  g.setAttribute('transform','translate(580,260)');
-  g.innerHTML = '<path d="M-24,4 q12,-18 36,-6 q-12,-6 -24,6 q-12,-6 -12,6Z" fill="#ffffff" opacity="0.0"/>';
-  svg.appendChild(g);
-  const path = g.querySelector('path');
-  path.animate([{opacity:0},{opacity:1},{opacity:0}],{duration:700,fill:'forwards'});
-  setTimeout(()=> g.remove(), 820);
-}
-
-/* show red sky */
-function showRedSky(on){
-  redSky.style.opacity = on ? 0.38 : 0.0;
-  if (on) playZap();
-}
-
-/* show long face shot */
-function showLongFaceShot(on){
-  if (on){
-    longFace.style.opacity = '1';
-    longFace.style.transform = 'translateX(-50%) scale(1.03)';
-    longFace.style.transition = 'opacity .6s ease, transform .6s cubic-bezier(.2,.9,.3,1)';
-    setTimeout(()=> {
-      longFace.style.transform = 'translateX(-50%) scale(1)';
-    }, 620);
-  } else {
-    longFace.style.opacity = '0';
-    longFace.style.transform = 'translateX(-50%) scale(.95)';
-  }
-}
-
-/* small screen shake helper */
-function shake(magnitude=6, duration=300){
-  const el = screen;
-  const keyframes = [];
-  const steps = 12;
-  for (let i=0;i<steps;i++){
-    keyframes.push({ transform: `translate(${(Math.random()*2-1)*magnitude}px, ${(Math.random()*2-1)*magnitude}px)`});
-  }
-  keyframes.push({ transform: 'translate(0,0)'});
-  el.animate(keyframes, { duration: duration, easing:'cubic-bezier(.3,.7,.2,1)'});
-}
-
-/* reset */
-function resetAll(){
-  anger = 0;
-  isAwakened = false;
-  timeline = [];
-  subtitleBox.textContent = '';
-  gaugeFill.style.width = '0%';
-  hintText.textContent = '터치 또는 클릭으로 분노를 모아 각성하세요';
-  redSky.style.opacity = 0;
-  showLongFaceShot(false);
-  document.getElementById('hairBase').style.fill = '#0b0b0b';
-  document.getElementById('hairSpikes').style.fill = '#0b0b0b';
-  document.getElementById('eyes-neutral').style.display = 'block';
-  document.getElementById('eyes-anger').style.display = 'none';
-  document.getElementById('mouth-neutral').style.display = 'block';
-  document.getElementById('mouth-shout').style.display = 'none';
-  document.getElementById('brow-left').style.opacity = '0';
-  document.getElementById('brow-right').style.opacity = '0';
-  showWound(false); showTear(false);
-}
-
-/* ----------------------------
-   Initialization
-   ---------------------------- */
-buildTimeline();
-playTimeline();
-updateGaugeUI();
-
-/* visual tick: occasionally spawn small ambient sparks around oban */
-setInterval(()=> {
-  if (!isAwakened && Math.random() < 0.25){
-    const rect = screen.getBoundingClientRect();
-    spawnBurst(rect.left + rect.width*0.5 + rand(-80,80), rect.top + rect.height*0.35 + rand(-40,40), '#fff2b8', 6);
-  }
-}, 520);
-
+loop();
 </script>
+
 </body>
 </html>
