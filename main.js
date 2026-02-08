@@ -15,7 +15,7 @@ window.addEventListener("resize", resize);
 resize();
 
 // =======================================================
-// INPUT (CLICK / TOUCH ONLY)
+// INPUT — CLICK / TOUCH ONLY (NO KEYBOARD)
 // =======================================================
 const input = {
   up: false,
@@ -46,33 +46,25 @@ buttons.forEach((btn) => {
   btn.addEventListener("touchend", up);
 });
 
-// PC 클릭 이동 (캔버스 클릭 방향)
-canvas.addEventListener("mousedown", (e) => {
-  const x = e.clientX;
-  const y = e.clientY;
-  const cx = canvas.width / 2;
-  const cy = canvas.height / 2;
-  input.left = x < cx - 40;
-  input.right = x > cx + 40;
-  input.up = y < cy - 40;
-  input.down = y > cy + 40;
-  input.interact = Math.abs(x - cx) < 40 && Math.abs(y - cy) < 40;
-  setTimeout(clearMove, 120);
-});
+// Canvas tap movement (PC + Mobile)
+canvas.addEventListener("mousedown", handleCanvasTap);
+canvas.addEventListener("touchstart", handleCanvasTap);
 
-canvas.addEventListener("touchstart", (e) => {
-  const t = e.touches[0];
-  const x = t.clientX;
-  const y = t.clientY;
+function handleCanvasTap(e) {
+  const p = e.touches ? e.touches[0] : e;
+  const x = p.clientX;
+  const y = p.clientY;
   const cx = canvas.width / 2;
   const cy = canvas.height / 2;
+
   input.left = x < cx - 40;
   input.right = x > cx + 40;
   input.up = y < cy - 40;
   input.down = y > cy + 40;
   input.interact = Math.abs(x - cx) < 40 && Math.abs(y - cy) < 40;
+
   setTimeout(clearMove, 120);
-});
+}
 
 function clearMove() {
   input.up = input.down = input.left = input.right = false;
@@ -237,7 +229,7 @@ class Particle {
 let particles = [];
 
 // =======================================================
-// ANA CHARACTER (FIXED HAIR)
+// ANA CHARACTER — FULL HAIR FIXED
 // =======================================================
 class Ana {
   constructor() {
@@ -272,8 +264,8 @@ class Ana {
       this.vy = lerp(this.vy, 0, 0.2);
     }
 
-    this.x += this.vx * dt;
-    this.y += this.vy * dt;
+    this.x += this.vx;
+    this.y += this.vy;
 
     this.x = clamp(this.x, 40, canvas.width - 40);
     this.y = clamp(this.y, 80, canvas.height - 40);
@@ -344,23 +336,23 @@ class Ana {
     ctx.fill();
 
     // =====================
-    // ✅ FIXED HAIR (FULL BOB)
+    // FULL BOB HAIR
     // =====================
     ctx.fillStyle = "#1b1b22";
 
-    // Back hair mass
+    // Back volume
     ctx.beginPath();
-    ctx.ellipse(0, -38, 16, 18, 0, Math.PI * 0.1, Math.PI * 0.9);
+    ctx.ellipse(0, -38, 16, 18, 0, Math.PI * 0.15, Math.PI * 0.85);
     ctx.fill();
 
-    // Side hair (right - ear covered)
+    // Right side hair (covers ear)
     ctx.beginPath();
-    ctx.ellipse(6, -34, 10, 14, 0.3, 0, Math.PI * 2);
+    ctx.ellipse(7, -34, 10, 14, 0.3, 0, Math.PI * 2);
     ctx.fill();
 
-    // Side hair (left - ear exposed)
+    // Left side hair (ear exposed)
     ctx.beginPath();
-    ctx.ellipse(-10, -34, 6, 12, -0.3, 0, Math.PI * 2);
+    ctx.ellipse(-11, -34, 6, 12, -0.3, 0, Math.PI * 2);
     ctx.fill();
 
     // Bangs
@@ -623,7 +615,7 @@ let dripTimer = 0;
 let clockTimer = 0;
 
 // =======================================================
-// SCENE 1: WELL (AUDITORY FOCUS)
+// SCENE 1: WELL
 // =======================================================
 function sceneWell(dt) {
   hintEl.textContent = wellCompleted
@@ -643,7 +635,6 @@ function sceneWell(dt) {
   ctx.fillStyle = grd;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Well
   const wellX = canvas.width / 2;
   const wellY = canvas.height * 0.65;
 
@@ -661,42 +652,24 @@ function sceneWell(dt) {
   ctx.lineTo(wellX, canvas.height * 0.3);
   ctx.stroke();
 
-  // Ambient dust
-  for (let i = 0; i < 20; i++) {
-    ctx.fillStyle = `rgba(100,100,140,${Math.random() * 0.1})`;
-    ctx.beginPath();
-    ctx.arc(
-      Math.random() * canvas.width,
-      Math.random() * canvas.height,
-      Math.random() * 3,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
-  }
-
-  ana.update(dt);
+  ana.update(1);
   ana.draw();
 
   const dist = Math.hypot(ana.x - wellX, ana.y - wellY);
   const pressing = dist < 100 && input.interact;
 
-  if (pressing && !wellCompleted) {
-    auditoryGauge += 0.012 * dt;
-  } else {
-    auditoryGauge -= 0.006 * dt;
-  }
-  auditoryGauge = clamp(auditoryGauge, 0, 1);
+  if (pressing && !wellCompleted) auditoryGauge += 0.012;
+  else auditoryGauge -= 0.006;
 
+  auditoryGauge = clamp(auditoryGauge, 0, 1);
   wellBreath.set(auditoryGauge);
 
-  dripTimer += dt;
+  dripTimer++;
   if (dripTimer > 140) {
     dripTimer = 0;
     playDrip();
   }
 
-  // UI gauge
   ctx.fillStyle = "rgba(255,255,255,0.2)";
   ctx.fillRect(canvas.width / 2 - 100, 40, 200, 10);
   ctx.fillStyle = "rgba(180,220,255,0.8)";
@@ -739,10 +712,11 @@ function sceneHouse(dt) {
     }
   }
 
-  fatherTimer += dt;
+  fatherTimer++;
   if (fatherTimer > 600) {
     fatherTimer = 0;
     fatherLooking = !fatherLooking;
+    playPaper();
   }
 
   if (fatherLooking) {
@@ -750,14 +724,14 @@ function sceneHouse(dt) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  father.update(dt);
+  father.update(1);
   father.draw();
   mother.draw();
 
   if (!sinkGain) sinkGain = createSink();
   sinkGain.gain.value = fatherLooking ? 0.08 : 0.05;
 
-  clockTimer += dt;
+  clockTimer++;
   if (clockTimer > 180) {
     clockTimer = 0;
     playTick();
@@ -779,13 +753,13 @@ function sceneHouse(dt) {
   if (!inventory.includes("bread")) drawItem(bread, "빵");
   if (!inventory.includes("water")) drawItem(water, "물");
 
-  ana.update(dt);
+  ana.update(1);
   ana.draw();
 
   if (fatherLooking && Math.abs(ana.x - father.x) < 120) {
-    stress = clamp(stress + 0.01 * dt, 0, 1);
+    stress = clamp(stress + 0.01, 0, 1);
   } else {
-    stress = clamp(stress - 0.02 * dt, 0, 1);
+    stress = clamp(stress - 0.02, 0, 1);
   }
 
   if (stress > 0.6) {
@@ -849,10 +823,10 @@ function sceneHideout(dt) {
     ctx.stroke();
   }
 
-  ana.update(dt);
+  ana.update(1);
   ana.draw();
 
-  soldier.update(dt);
+  soldier.update(1);
   soldier.draw();
 
   droppedItems.forEach((it) => {
@@ -865,15 +839,14 @@ function sceneHideout(dt) {
   const dist = Math.hypot(ana.x - soldier.x, ana.y - soldier.y);
 
   if (dist < 80 && !soldierHelped) {
-    imagination = clamp(imagination - 0.002 * dt, 0, 1);
-    trust = clamp(trust - 0.002 * dt, 0, 1);
+    imagination = clamp(imagination - 0.002, 0, 1);
+    trust = clamp(trust - 0.002, 0, 1);
     ctx.fillStyle = "rgba(0,0,0,0.25)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
   soldierBreath.set(clamp(1 - dist / 200, 0, 1));
 
-  // Drop
   if (input.interact && inventory.length > 0 && dist > 90) {
     const item = inventory.shift();
     droppedItems.push(item);
@@ -882,23 +855,21 @@ function sceneHideout(dt) {
     playDrop();
   }
 
-  // Observe (tap screen away from soldier)
   if (input.observe && dist > 90) {
     imagination += 0.1;
     trust += 0.05;
-
     ctx.fillStyle = "rgba(255,255,255,0.8)";
     ctx.font = "14px serif";
     ctx.textAlign = "center";
-    ctx.fillText("그의 군복 주머니에서 낡은 가족 사진이 보인다…", canvas.width / 2, canvas.height * 0.3);
-
+    ctx.fillText(
+      "그의 군복 주머니에서 낡은 가족 사진이 보인다…",
+      canvas.width / 2,
+      canvas.height * 0.3
+    );
     soldierHelped = true;
   }
 
-  // Step back
-  if (input.back) {
-    ana.y += 1.5 * dt;
-  }
+  if (input.back) ana.y += 1.5;
 
   imagination = clamp(imagination, 0, 1);
   trust = clamp(trust, 0, 1);
@@ -907,24 +878,24 @@ function sceneHideout(dt) {
 // =======================================================
 // MAIN LOOP
 // =======================================================
-function update(dt) {
+function loop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  if (currentScene === 0) sceneWell(dt);
-  if (currentScene === 1) sceneHouse(dt);
-  if (currentScene === 2) sceneHideout(dt);
+  if (currentScene === 0) sceneWell(1);
+  if (currentScene === 1) sceneHouse(1);
+  if (currentScene === 2) sceneHideout(1);
 
   particles.forEach((p) => {
-    p.update(dt);
+    p.update(1);
     p.draw();
   });
   particles = particles.filter((p) => p.life > 0);
 
-  requestAnimationFrame(() => update(1));
+  requestAnimationFrame(loop);
 }
 
 // =======================================================
 // START
 // =======================================================
 updateInventoryUI();
-update(1);
+loop();
