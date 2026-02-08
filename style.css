@@ -1,10 +1,14 @@
+* {
+  box-sizing: border-box;
+}
+
 html, body {
   margin: 0;
   padding: 0;
   background: #0b0b12;
   overflow: hidden;
   touch-action: none;
-  font-family: sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 canvas {
@@ -21,7 +25,7 @@ canvas {
 
 #hint {
   position: absolute;
-  top: 8px;
+  top: 10px;
   width: 100%;
   text-align: center;
   font-size: 13px;
@@ -30,10 +34,11 @@ canvas {
 
 #inventory {
   position: absolute;
-  bottom: 90px;
+  bottom: 100px;
   width: 100%;
   text-align: center;
   font-size: 13px;
+  letter-spacing: 2px;
 }
 
 #buttons {
@@ -53,12 +58,13 @@ canvas {
   height: 60px;
   border-radius: 14px;
   border: none;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
   color: white;
   font-size: 18px;
   backdrop-filter: blur(4px);
+  -webkit-tap-highlight-color: transparent;
 }
 
 #buttons button:active {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
 }
