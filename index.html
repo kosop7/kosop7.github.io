@@ -2,16 +2,26 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>The Spirit of the Hive</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <title>Spirit of the Beehive - Ana</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <canvas id="game"></canvas>
+
   <div id="ui">
     <div id="hint"></div>
     <div id="inventory"></div>
+    <div id="buttons">
+      <button data-action="up">▲</button>
+      <button data-action="left">◀</button>
+      <button data-action="down">▼</button>
+      <button data-action="right">▶</button>
+      <button data-action="interact">●</button>
+      <button data-action="observe">◎</button>
+      <button data-action="back">↩</button>
+    </div>
   </div>
+
   <script src="main.js"></script>
 </body>
 </html>
