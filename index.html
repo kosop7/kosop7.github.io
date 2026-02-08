@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>벌집의 정령 - 프로토타입</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #0a0a0a;
+            color: #e0d8c0;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #gameCanvas {
+            display: block;
+            background-color: #1a1810;
+        }
+        
+        #uiOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        #honeycombUI {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 220px;
+            height: 200px;
+            opacity: 0.9;
+            pointer-events: all;
+        }
+        
+        #emotionBar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 200px;
+            height: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 1px solid #3a3520;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        #emotionFill {
+            height: 100%;
+            width: 50%;
+            background: linear-gradient(90deg, #2a5c8c, #4a8cbc);
+            transition: width 0.5s ease, background 0.5s ease;
+        }
+        
+        #dialogueBox {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 600px;
+            background-color: rgba(20, 18, 12, 0.9);
+            border: 1px solid #5a4c30;
+            padding: 15px;
+            border-radius: 5px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: all;
+        }
+        
+        #dialogueText {
+            color: #e0d8c0;
+            font-size: 16px;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+        
+        #dialogueChoices {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .choiceBtn {
+            background-color: rgba(58, 53, 32, 0.7);
+            color: #d0c8a8;
+            border: 1px solid #7a6c40;
+            padding: 8px 12px;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all 0.2s ease;
+            pointer-events: all;
+        }
+        
+        .choiceBtn:hover {
+            background-color: rgba(88, 83, 52, 0.9);
+            color: #f0e8c8;
+        }
+        
+        #memoryCount {
+            position: absolute;
+            top: 50px;
+            left: 20px;
+            font-size: 14px;
+            color: #c0b060;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .flicker {
+            animation: flicker 0.15s infinite alternate;
+        }
+        
+        @keyframes flicker {
+            from { opacity: 0.7; }
+            to { opacity: 1; }
+        }
+        
+        #controlsHint {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            font-size: 12px;
+            color: #706850;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="uiOverlay">
+            <div id="emotionBar">
+                <div id="emotionFill"></div>
+            </div>
+            
+            <div id="memoryCount">기억 조각: <span id="memoryCountValue">0</span>/7</div>
+            
+            <div id="dialogueBox" class="hidden">
+                <div id="dialogueText"></div>
+                <div id="dialogueChoices"></div>
+            </div>
+            
+            <canvas id="honeycombUI"></canvas>
+            
+            <div id="controlsHint">
+                이동: WASD/방향키 | 상호작용: F | 달리기: Shift | 메뉴: ESC
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== 게임 상수 및 전역 변수 ==========
+        const GameState = {
+            PLAYING: 'playing',
+            DIALOGUE: 'dialogue',
+            MENU: 'menu'
+        };
+
+        let currentState = GameState.PLAYING;
+        let gameTime = 0;
+        let memoryFragments = 0;
+        let emotionLevel = 0.5; // 0.0 ~ 1.0
+        let isRunning = false;
+        
+        // 캔버스 요소
+        const mainCanvas = document.getElementById('gameCanvas');
+        const honeycombCanvas = document.getElementById('honeycombUI');
+        const mainCtx = mainCanvas.getContext('2d');
+        const honeycombCtx = honeycombCanvas.getContext('2d');
+        
+        // ========== 게임 월드 설정 ==========
+        const WORLD = {
+            WIDTH: 2400,
+            HEIGHT: 1600,
+            LAYERS: 3
+        };
+        
+        // 화면 크기 조정
+        function resizeCanvases() {
+            mainCanvas.width = window.innerWidth;
+            mainCanvas.height = window.innerHeight;
+            honeycombCanvas.width = 220;
+            honeycombCanvas.height = 200;
+        }
+        
+        window.addEventListener('resize', resizeCanvases);
+        resizeCanvases();
+        
+        // ========== 벌집 메모리 시스템 ==========
+        const MemoryFragments = [
+            { id: 0, name: "영화 필름", color: "#8a7c5a", unlocked: false },
+            { id: 1, name: "정령의 표식", color: "#6a8c5c", unlocked: false },
+            { id: 2, name: "우물의 숨소리", color: "#4a6c8c", unlocked: false },
+            { id: 3, name: "낡은 시계", color: "#8c6c4a", unlocked: false },
+            { id: 4, name: "아버지의 벌꿀", color: "#bc9c2c", unlocked: false },
+            { id: 5, name: "어머니의 편지", color: "#7c8c9c", unlocked: false },
+            { id: 6, name: "괴물의 눈빛", color: "#3a5c7c", unlocked: false }
+        ];
+        
+        // 벌집 UI 렌더링
+        function renderHoneycombUI() {
+            honeycombCtx.clearRect(0, 0, honeycombCanvas.width, honeycombCanvas.height);
+            
+            // 벌집 배경
+            honeycombCtx.fillStyle = 'rgba(20, 18, 12, 0.8)';
+            honeycombCtx.fillRect(0, 0, honeycombCanvas.width, honeycombCanvas.height);
+            
+            honeycombCtx.strokeStyle = '#5a4c30';
+            honeycombCtx.lineWidth = 1;
+            honeycombCtx.strokeRect(2, 2, honeycombCanvas.width-4, honeycombCanvas.height-4);
+            
+            // 벌집 셀 위치 정의 (육각형 7개)
+            const hexagonCenters = [
+                {x: 110, y: 70},   // 중앙
+                {x: 70, y: 40},    // 왼쪽 위
+                {x: 150, y: 40},   // 오른쪽 위
+                {x: 40, y: 100},   // 왼쪽
+                {x: 180, y: 100},  // 오른쪽
+                {x: 70, y: 160},   // 왼쪽 아래
+                {x: 150, y: 160}   // 오른쪽 아래
+            ];
+            
+            const hexagonRadius = 25;
+            
+            // 벌집 셀 그리기
+            hexagonCenters.forEach((center, index) => {
+                // 육각형 경로 생성
+                honeycombCtx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const angle = Math.PI / 3 * i + Math.PI / 6;
+                    const x = center.x + hexagonRadius * Math.cos(angle);
+                    const y = center.y + hexagonRadius * Math.sin(angle);
+                    
+                    if (i === 0) {
+                        honeycombCtx.moveTo(x, y);
+                    } else {
+                        honeycombCtx.lineTo(x, y);
+                    }
+                }
+                honeycombCtx.closePath();
+                
+                // 채우기 스타일 설정
+                if (MemoryFragments[index].unlocked) {
+                    // 해금된 셀
+                    honeycombCtx.fillStyle = MemoryFragments[index].color + 'CC';
+                    honeycombCtx.fill();
+                    
+                    // 빛나는 효과
+                    honeycombCtx.strokeStyle = '#f0e080';
+                    honeycombCtx.lineWidth = 2;
+                    honeycombCtx.stroke();
+                    
+                    // 기억 이름 표시
+                    honeycombCtx.fillStyle = '#f0e8c8';
+                    honeycombCtx.font = '9px Arial';
+                    honeycombCtx.textAlign = 'center';
+                    honeycombCtx.textBaseline = 'middle';
+                    honeycombCtx.fillText(MemoryFragments[index].name, center.x, center.y);
+                } else {
+                    // 잠긴 셀
+                    honeycombCtx.fillStyle = '#2a2820';
+                    honeycombCtx.fill();
+                    
+                    honeycombCtx.strokeStyle = '#3a3520';
+                    honeycombCtx.lineWidth = 1;
+                    honeycombCtx.stroke();
+                    
+                    // 물음표 표시
+                    honeycombCtx.fillStyle = '#5a5440';
+                    honeycombCtx.font = 'bold 16px Arial';
+                    honeycombCtx.textAlign = 'center';
+                    honeycombCtx.textBaseline = 'middle';
+                    honeycombCtx.fillText('?', center.x, center.y);
+                }
+            });
+            
+            // 벌집 셀 연결선 (중앙에서 각 셀로)
+            honeycombCtx.strokeStyle = '#5a4c3088';
+            honeycombCtx.lineWidth = 1;
+            honeycombCtx.setLineDash([3, 3]);
+            
+            hexagonCenters.forEach((center, index) => {
+                if (index === 0) return; // 중앙 셀은 제외
+                
+                honeycombCtx.beginPath();
+                honeycombCtx.moveTo(hexagonCenters[0].x, hexagonCenters[0].y);
+                honeycombCtx.lineTo(center.x, center.y);
+                honeycombCtx.stroke();
+            });
+            
+            honeycombCtx.setLineDash([]);
+            
+            // 제목
+            honeycombCtx.fillStyle = '#c0b060';
+            honeycombCtx.font = 'bold 12px Arial';
+            honeycombCtx.textAlign = 'center';
+            honeycombCtx.fillText('벌집 기억', honeycombCanvas.width/2, 20);
+        }
+        
+        // ========== 캐릭터 클래스 ==========
+        class Character {
+            constructor(x, y, width, height, color, type) {
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.width = width;
+                this.height = height;
+                this.color = color;
+                this.type = type;
+                this.speed = type === 'ana' ? 2 : 0.5;
+                this.running = false;
+                this.direction = 0; // 0=오른쪽, 1=왼쪽
+                this.animationFrame = 0;
+                this.emotionParticles = [];
+                
+                // 아나 전용 속성
+                if (type === 'ana') {
+                    this.imagination = 0.5;
+                    this.fear = 0.3;
+                    this.curiosity = 0.7;
+                }
+            }
+            
+            update(deltaTime) {
+                // 위치 업데이트
+                this.x += this.vx * (this.running ? 1.8 : 1) * this.speed;
+                this.y += this.vy * (this.running ? 1.8 : 1) * this.speed;
+                
+                // 월드 경계 체크
+                this.x = Math.max(0, Math.min(WORLD.WIDTH - this.width, this.x));
+                this.y = Math.max(0, Math.min(WORLD.HEIGHT - this.height, this.y));
+                
+                // 방향 업데이트
+                if (this.vx > 0) this.direction = 0;
+                if (this.vx < 0) this.direction = 1;
+                
+                // 애니메이션 프레임 업데이트
+                if (this.vx !== 0 || this.vy !== 0) {
+                    this.animationFrame += deltaTime * 10;
+                }
+                
+                // 감정 입자 생성 (아나만)
+                if (this.type === 'ana' && Math.random() < 0.05) {
+                    this.createEmotionParticle();
+                }
+                
+                // 입자 업데이트
+                this.emotionParticles = this.emotionParticles.filter(p => {
+                    p.life -= deltaTime;
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.01; // 중력
+                    return p.life > 0;
+                });
+            }
+            
+            createEmotionParticle() {
+                let color;
+                if (this.fear > 0.6) color = '#4a6cbc'; // 공포: 파란색
+                else if (this.curiosity > 0.6) color = '#bc9c2c'; // 호기심: 노란색
+                else color = '#8c6c9c'; // 슬픔: 보라색
+                
+                this.emotionParticles.push({
+                    x: this.x + this.width/2 + (Math.random()-0.5)*10,
+                    y: this.y + this.height/2,
+                    vx: (Math.random()-0.5)*0.5,
+                    vy: -Math.random()*0.5,
+                    life: 1 + Math.random(),
+                    color: color,
+                    size: 2 + Math.random()*3
+                });
+            }
+            
+            render(ctx, cameraX, cameraY) {
+                const screenX = this.x - cameraX;
+                const screenY = this.y - cameraY;
+                
+                // 캐릭터 렌더링
+                ctx.save();
+                
+                // 캐릭터 몸체
+                ctx.fillStyle = this.color;
+                
+                // 캐릭터 타입별 렌더링
+                switch(this.type) {
+                    case 'ana':
+                        // 아나: 검은 단발머리 소녀
+                        ctx.fillStyle = '#2a2a2a'; // 머리 색
+                        ctx.beginPath();
+                        ctx.arc(screenX + this.width/2, screenY + this.height/4, this.width/3, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // 얼굴
+                        ctx.fillStyle = '#f0d8b0';
+                        ctx.fillRect(screenX, screenY, this.width, this.height);
+                        
+                        // 눈 (크고 동그란)
+                        ctx.fillStyle = '#1a1a1a';
+                        const eyeOffset = this.direction === 0 ? 2 : -2;
+                        ctx.beginPath();
+                        ctx.arc(screenX + this.width/3 + eyeOffset, screenY + this.height/3, 4, 0, Math.PI * 2);
+                        ctx.arc(screenX + 2*this.width/3 + eyeOffset, screenY + this.height/3, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // 입 (감정에 따라 변화)
+                        ctx.strokeStyle = '#3a2a1a';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        if (this.fear > 0.6) {
+                            // 공포: 작은 'o' 모양
+                            ctx.arc(screenX + this.width/2, screenY + 2*this.height/3, 2, 0, Math.PI * 2);
+                            ctx.stroke();
+                        } else {
+                            // 기본: 중립적인 선
+                            ctx.moveTo(screenX + this.width/3, screenY + 2*this.height/3);
+                            ctx.lineTo(screenX + 2*this.width/3, screenY + 2*this.height/3);
+                            ctx.stroke();
+                        }
+                        
+                        // 카디건 (소매 표현)
+                        ctx.strokeStyle = '#5a4c30';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(screenX, screenY + this.height/2);
+                        ctx.lineTo(screenX + this.width, screenY + this.height/2);
+                        ctx.stroke();
+                        break;
+                        
+                    case 'father':
+                        // 아버지: 마르고 키 큰 실루엣
+                        ctx.fillStyle = '#1a2a3a';
+                        ctx.fillRect(screenX, screenY, this.width, this.height);
+                        
+                        // 안경 효과
+                        ctx.strokeStyle = '#f0f0a0';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.arc(screenX + this.width/3, screenY + this.height/3, 6, 0, Math.PI * 2);
+                        ctx.arc(screenX + 2*this.width/3, screenY + this.height/3, 6, 0, Math.PI * 2);
+                        ctx.stroke();
+                        
+                        // 손 (부은 손 표현)
+                        ctx.fillStyle = '#b03a2a';
+                        ctx.beginPath();
+                        ctx.arc(screenX + this.width, screenY + this.height/2, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                        
+                    case 'spirit':
+                        // 정령/군인: 반투명한 실루엣
+                        ctx.globalAlpha = 0.7;
+                        ctx.fillStyle = this.color;
+                        ctx.fillRect(screenX, screenY, this.width, this.height);
+                        
+                        // 빛나는 효과
+                        ctx.strokeStyle = '#f0e080';
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([2, 2]);
+                        ctx.strokeRect(screenX, screenY, this.width, this.height);
+                        ctx.setLineDash([]);
+                        ctx.globalAlpha = 1.0;
+                        break;
+                }
+                
+                // 감정 입자 렌더링 (아나만)
+                if (this.type === 'ana') {
+                    this.emotionParticles.forEach(p => {
+                        ctx.globalAlpha = p.life;
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(screenX + p.x - this.x, screenY + p.y - this.y, p.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+                    ctx.globalAlpha = 1.0;
+                }
+                
+                ctx.restore();
+            }
+        }
+        
+        // ========== 상호작용 오브젝트 클래스 ==========
+        class InteractiveObject {
+            constructor(x, y, width, height, type, memoryId = -1) {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.type = type;
+                this.memoryId = memoryId;
+                this.activated = false;
+                this.highlight = false;
+                this.pulse = 0;
+            }
+            
+            update(deltaTime) {
+                this.pulse += deltaTime * 2;
+            }
+            
+            render(ctx, cameraX, cameraY) {
+                const screenX = this.x - cameraX;
+                const screenY = this.y - cameraY;
+                
+                ctx.save();
+                
+                // 오브젝트 타입별 렌더링
+                switch(this.type) {
+                    case 'movie_fragment':
+                        // 영화 필름 조각
+                        ctx.fillStyle = this.activated ? '#8a7c5a' : '#4a4430';
+                        ctx.fillRect(screenX, screenY, this.width, this.height);
+                        
+                        // 필름 구멍
+                        ctx.fillStyle = '#1a1a1a';
+                        for (let i = 0; i < 3; i++) {
+                            ctx.beginPath();
+                            ctx.arc(screenX + this.width/4, screenY + (i+1)*this.height/4, 2, 0, Math.PI * 2);
+                            ctx.arc(screenX + 3*this.width/4, screenY + (i+1)*this.height/4, 2, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        
+                        // 하이라이트 효과
+                        if (this.highlight || !this.activated) {
+                            ctx.strokeStyle = this.activated ? '#f0e080' : '#a09060';
+                            ctx.lineWidth = 1;
+                            ctx.strokeRect(screenX, screenY, this.width, this.height);
+                        }
+                        break;
+                        
+                    case 'well':
+                        // 우물
+                        ctx.fillStyle = '#3a3a2a';
+                        ctx.beginPath();
+                        ctx.arc(screenX + this.width/2, screenY + this.height/2, this.width/2, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // 우물 내부
+                        ctx.fillStyle = '#1a2a3a';
+                        ctx.beginPath();
+                        ctx.arc(screenX + this.width/2, screenY + this.height/2, this.width/3, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // 숨소리 효과 (펄스)
+                        if (!this.activated) {
+                            ctx.globalAlpha = 0.5 + 0.3 * Math.sin(this.pulse);
+                            ctx.strokeStyle = '#4a6cbc';
+                            ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            ctx.arc(screenX + this.width/2, screenY + this.height/2, this.width/3 + 5, 0, Math.PI * 2);
+                            ctx.stroke();
+                            ctx.globalAlpha = 1.0;
+                        }
+                        break;
+                        
+                    case 'honey_hive':
+                        // 벌집
+                        ctx.fillStyle = '#bc9c2c';
+                        
+                        // 육각형 벌집 구조
+                        const hexSize = this.width / 4;
+                        for (let row = 0; row < 3; row++) {
+                            for (let col = 0; col < 3; col++) {
+                                const hx = screenX + col * hexSize * 1.5 + (row % 2) * hexSize * 0.75;
+                                const hy = screenY + row * hexSize * 0.85;
+                                
+                                ctx.beginPath();
+                                for (let i = 0; i < 6; i++) {
+                                    const angle = Math.PI / 3 * i;
+                                    const x = hx + hexSize * Math.cos(angle);
+                                    const y = hy + hexSize * Math.sin(angle);
+                                    
+                                    if (i === 0) ctx.moveTo(x, y);
+                                    else ctx.lineTo(x, y);
+                                }
+                                ctx.closePath();
+                                ctx.fill();
+                            }
+                        }
+                        break;
+                }
+                
+                ctx.restore();
+            }
+            
+            checkInteraction(playerX, playerY, playerWidth, playerHeight) {
+                const distanceX = Math.abs((this.x + this.width/2) - (playerX + playerWidth/2));
+                const distanceY = Math.abs((this.y + this.height/2) - (playerY + playerHeight/2));
+                
+                return distanceX < (this.width + playerWidth)/2 && 
+                       distanceY < (this.height + playerHeight)/2;
+            }
+        }
+        
+        // ========== 게임 월드 생성 ==========
+        const player = new Character(600, 500, 20, 40, '#7a6c40', 'ana');
+        const characters = [
+            player,
+            new Character(800, 300, 25, 50, '#2a3a4a', 'father'),
+            new Character(1200, 700, 20, 40, '#5a7c9c88', 'spirit')
+        ];
+        
+        const interactiveObjects = [
+            new InteractiveObject(400, 400, 30, 20, 'movie_fragment', 0),
+            new InteractiveObject(900, 800, 50, 50, 'well', 2),
+            new InteractiveObject(1500, 400, 60, 50, 'honey_hive', 4),
+            new InteractiveObject(700, 900, 30, 20, 'movie_fragment', -1)
+        ];
+        
+        // ========== 카메라 시스템 ==========
+        let cameraX = 0;
+        let cameraY = 0;
+        
+        function updateCamera() {
+            // 플레이어를 중심으로 카메라 이동 (부드럽게)
+            cameraX += (player.x - mainCanvas.width/2 - cameraX) * 0.1;
+            cameraY += (player.y - mainCanvas.height/2 - cameraY) * 0.1;
+            
+            // 월드 경계 체크
+            cameraX = Math.max(0, Math.min(WORLD.WIDTH - mainCanvas.width, cameraX));
+            cameraY = Math.max(0, Math.min(WORLD.HEIGHT - mainCanvas.height, cameraY));
+        }
+        
+        // ========== 대화 시스템 ==========
+        function showDialogue(text, choices = []) {
+            const dialogueBox = document.getElementById('dialogueBox');
+            const dialogueText = document.getElementById('dialogueText');
+            const choicesContainer = document.getElementById('dialogueChoices');
+            
+            dialogueText.textContent = text;
+            choicesContainer.innerHTML = '';
+            
+            choices.forEach((choice, index) => {
+                const button = document.createElement('button');
+                button.className = 'choiceBtn';
+                button.textContent = choice.text;
+                button.onclick = () => {
+                    choice.action();
+                    hideDialogue();
+                };
+                choicesContainer.appendChild(button);
+            });
+            
+            dialogueBox.classList.remove('hidden');
+            currentState = GameState.DIALOGUE;
+        }
+        
+        function hideDialogue() {
+            document.getElementById('dialogueBox').classList.add('hidden');
+            currentState = GameState.PLAYING;
+        }
+        
+        // ========== 게임 이벤트 처리 ==========
+        const keys = {};
+        
+        window.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            
+            // 달리기
+            if (e.key === 'Shift') {
+                isRunning = true;
+                player.running = true;
+            }
+            
+            // 상호작용
+            if (e.key === 'f' || e.key === 'F') {
+                if (currentState === GameState.PLAYING) {
+                    checkForInteractions();
+                }
+            }
+            
+            // ESC로 대화 닫기
+            if (e.key === 'Escape') {
+                if (currentState === GameState.DIALOGUE) {
+                    hideDialogue();
+                }
+            }
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+            
+            if (e.key === 'Shift') {
+                isRunning = false;
+                player.running = false;
+            }
+        });
+        
+        function handleInput() {
+            if (currentState !== GameState.PLAYING) return;
+            
+            player.vx = 0;
+            player.vy = 0;
+            
+            // 이동 입력 처리
+            if (keys['w'] || keys['arrowup']) player.vy = -1;
+            if (keys['s'] || keys['arrowdown']) player.vy = 1;
+            if (keys['a'] || keys['arrowleft']) player.vx = -1;
+            if (keys['d'] || keys['arrowright']) player.vx = 1;
+            
+            // 대각선 이동 정규화
+            if (player.vx !== 0 && player.vy !== 0) {
+                player.vx *= 0.707;
+                player.vy *= 0.707;
+            }
+        }
+        
+        function checkForInteractions() {
+            interactiveObjects.forEach(obj => {
+                if (!obj.activated && obj.checkInteraction(player.x, player.y, player.width, player.height)) {
+                    if (obj.memoryId >= 0 && !MemoryFragments[obj.memoryId].unlocked) {
+                        // 기억 조각 획득
+                        MemoryFragments[obj.memoryId].unlocked = true;
+                        memoryFragments++;
+                        document.getElementById('memoryCountValue').textContent = memoryFragments;
+                        
+                        // 대화 표시
+                        const memoryNames = ["영화 필름 조각", "우물의 숨소리", "아버지의 벌꿀"];
+                        const dialogues = [
+                            "영화의 한 장면이 필름에 새겨져 있다... 프랑켄슈타인의 괴물이 눈을 뜨는 순간.",
+                            "우물 밑에서 들려오는 숨소리... 누군가 숨어있다.",
+                            "벌집에서 떨어진 꿀방울... 아버지의 손에서 흘러내린 것 같다."
+                        ];
+                        
+                        showDialogue(
+                            `'${memoryNames[obj.memoryId]}'을(를) 발견했다. ${dialogues[obj.memoryId]}`,
+                            [{ text: "계속", action: () => {} }]
+                        );
+                        
+                        obj.activated = true;
+                        
+                        // 감정 변화
+                        player.curiosity = Math.min(1, player.curiosity + 0.2);
+                        player.fear = obj.type === 'well' ? player.fear + 0.1 : player.fear;
+                    } else if (obj.type === 'well' && !obj.activated) {
+                        // 우물 상호작용 (기억 없이)
+                        showDialogue(
+                            "우물 안이 어둡고 깊다... 밑에서 무언가 숨소리가 들리는 것 같다.",
+                            [
+                                { 
+                                    text: "가까이 다가가 본다", 
+                                    action: () => {
+                                        player.fear += 0.3;
+                                        updateEmotionDisplay();
+                                    }
+                                },
+                                { 
+                                    text: "무서워서 떠난다", 
+                                    action: () => {
+                                        player.fear += 0.1;
+                                        updateEmotionDisplay();
+                                    }
+                                }
+                            ]
+                        );
+                    }
+                }
+            });
+            
+            // 아버지와의 상호작용 체크
+            const father = characters.find(c => c.type === 'father');
+            const distanceToFather = Math.sqrt(
+                Math.pow(player.x - father.x, 2) + Math.pow(player.y - father.y, 2)
+            );
+            
+            if (distanceToFather < 100 && memoryFragments > 0) {
+                showDialogue(
+                    "아버지가 벌집을 바라보고 있다... 그의 손은 여전히 부어있다.",
+                    [
+                        { 
+                            text: "아버지에게 다가간다", 
+                            action: () => {
+                                player.fear += 0.2;
+                                updateEmotionDisplay();
+                            }
+                        },
+                        { 
+                            text: "조용히 지나간다", 
+                            action: () => {}
+                        }
+                    ]
+                );
+            }
+        }
+        
+        // ========== 감정 시스템 ==========
+        function updateEmotionDisplay() {
+            // 감정 수치 계산 (호기심 - 공포)
+            emotionLevel = 0.5 + (player.curiosity - player.fear) * 0.3;
+            emotionLevel = Math.max(0, Math.min(1, emotionLevel));
+            
+            // 감정 바 업데이트
+            const emotionFill = document.getElementById('emotionFill');
+            emotionFill.style.width = `${emotionLevel * 100}%`;
+            
+            // 감정에 따른 색상 변화
+            if (player.fear > 0.7) {
+                emotionFill.style.background = 'linear-gradient(90deg, #3a4a7c, #6a8ccc)';
+            } else if (player.curiosity > 0.7) {
+                emotionFill.style.background = 'linear-gradient(90deg, #8c7c2a, #bcac4c)';
+            } else {
+                emotionFill.style.background = 'linear-gradient(90deg, #2a5c8c, #4a8cbc)';
+            }
+            
+            // 감정에 따른 화면 효과
+            if (player.fear > 0.8) {
+                document.body.classList.add('flicker');
+            } else {
+                document.body.classList.remove('flicker');
+            }
+        }
+        
+        // ========== 환경 렌더링 ==========
+        function renderEnvironment(ctx, cameraX, cameraY) {
+            // 배경 (어두운 들판)
+            ctx.fillStyle = '#1a1810';
+            ctx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+            
+            // 하늘 (어두운 그라데이션)
+            const gradient = ctx.createLinearGradient(0, 0, 0, mainCanvas.height);
+            gradient.addColorStop(0, '#0a182a');
+            gradient.addColorStop(1, '#1a0a1a');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+            
+            // 먼 언덕
+            ctx.fillStyle = '#2a281a';
+            ctx.beginPath();
+            ctx.moveTo(0 - cameraX/3, 400 - cameraY/3);
+            ctx.bezierCurveTo(800 - cameraX/3, 200 - cameraY/3, 1600 - cameraX/3, 500 - cameraY/3, WORLD.WIDTH, 600 - cameraY/3);
+            ctx.lineTo(WORLD.WIDTH, WORLD.HEIGHT);
+            ctx.lineTo(0, WORLD.HEIGHT);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 중간 거리 언덕
+            ctx.fillStyle = '#3a382a';
+            ctx.beginPath();
+            ctx.moveTo(0 - cameraX/2, 500 - cameraY/2);
+            ctx.bezierCurveTo(600 - cameraX/2, 400 - cameraY/2, 1200 - cameraX/2, 550 - cameraY/2, WORLD.WIDTH, 650 - cameraY/2);
+            ctx.lineTo(WORLD.WIDTH, WORLD.HEIGHT);
+            ctx.lineTo(0, WORLD.HEIGHT);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 나무들
+            ctx.fillStyle = '#2a3a2a';
+            for (let i = 0; i < 15; i++) {
+                const treeX = (i * 300) % WORLD.WIDTH;
+                const treeY = 600 + Math.sin(i * 0.5) * 50;
+                
+                if (treeX > cameraX - 100 && treeX < cameraX + mainCanvas.width + 100) {
+                    // 나무 기둥
+                    ctx.fillRect(treeX - cameraX, treeY - cameraY, 20, 80);
+                    
+                    // 나무 잎
+                    ctx.beginPath();
+                    ctx.arc(treeX - cameraX + 10, treeY - cameraY, 40, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            // 육각형 패턴 (환상적 요소)
+            ctx.strokeStyle = '#3a352022';
+            ctx.lineWidth = 1;
+            const hexSize = 80;
+            
+            for (let x = -hexSize; x < mainCanvas.width + hexSize; x += hexSize * 1.5) {
+                for (let y = -hexSize; y < mainCanvas.height + hexSize; y += hexSize * 0.85) {
+                    const offsetX = (Math.floor(y / (hexSize * 0.85)) % 2) * hexSize * 0.75;
+                    
+                    ctx.beginPath();
+                    for (let i = 0; i < 6; i++) {
+                        const angle = Math.PI / 3 * i;
+                        const px = x + offsetX + hexSize * Math.cos(angle);
+                        const py = y + hexSize * Math.sin(angle);
+                        
+                        if (i === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.closePath();
+                    ctx.stroke();
+                }
+            }
+            
+            // 지면
+            ctx.fillStyle = '#2a2815';
+            ctx.fillRect(0 - cameraX, 700 - cameraY, WORLD.WIDTH, WORLD.HEIGHT - 700);
+            
+            // 지면 텍스처
+            ctx.strokeStyle = '#3a352033';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < 50; i++) {
+                ctx.beginPath();
+                ctx.moveTo((i * 100) - cameraX, 700 - cameraY);
+                ctx.lineTo((i * 100) - cameraX, WORLD.HEIGHT - cameraY);
+                ctx.stroke();
+            }
+        }
+        
+        // ========== 게임 루프 ==========
+        let lastTime = 0;
+        
+        function gameLoop(currentTime) {
+            const deltaTime = Math.min((currentTime - lastTime) / 1000, 0.1);
+            lastTime = currentTime;
+            
+            gameTime += deltaTime;
+            
+            // 입력 처리
+            handleInput();
+            
+            // 카메라 업데이트
+            updateCamera();
+            
+            // 게임 상태가 PLAYING일 때만 엔티티 업데이트
+            if (currentState === GameState.PLAYING) {
+                // 캐릭터 업데이트
+                characters.forEach(character => character.update(deltaTime));
+                
+                // 상호작용 오브젝트 업데이트
+                interactiveObjects.forEach(obj => obj.update(deltaTime));
+                
+                // 감정 표시 업데이트
+                updateEmotionDisplay();
+            }
+            
+            // 렌더링
+            mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+            
+            // 환경 렌더링
+            renderEnvironment(mainCtx, cameraX, cameraY);
+            
+            // 상호작용 오브젝트 렌더링
+            interactiveObjects.forEach(obj => obj.render(mainCtx, cameraX, cameraY));
+            
+            // 캐릭터 렌더링
+            characters.forEach(character => character.render(mainCtx, cameraX, cameraY));
+            
+            // UI 업데이트
+            renderHoneycombUI();
+            
+            // 게임 루프 계속
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // ========== 게임 초기화 및 시작 ==========
+        function initGame() {
+            // 초기 대화
+            setTimeout(() => {
+                showDialogue(
+                    "이사벨: 아나, 정령 찾기 놀이 할래? 마을에 정령이 숨어있다고... 우물에 가보자.",
+                    [
+                        { 
+                            text: "좋아!", 
+                            action: () => {
+                                player.curiosity += 0.2;
+                                updateEmotionDisplay();
+                            }
+                        },
+                        { 
+                            text: "무서워...", 
+                            action: () => {
+                                player.fear += 0.1;
+                                updateEmotionDisplay();
+                            }
+                        }
+                    ]
+                );
+            }, 1000);
+            
+            // 감정 표시 초기화
+            updateEmotionDisplay();
+            
+            // 벌집 UI 초기화
+            renderHoneycombUI();
+            
+            // 게임 루프 시작
+            requestAnimationFrame(gameLoop);
+            
+            console.log("벌집의 정령 프로토타입이 시작되었습니다.");
+            console.log("이동: WASD/방향키, 달리기: Shift, 상호작용: F");
+            console.log("기억 조각을 모아 벌집을 채워보세요.");
+        }
+        
+        // 게임 시작
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>
