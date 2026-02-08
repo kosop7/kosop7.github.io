@@ -1,806 +1,721 @@
-// ===============================
-// CANVAS SETUP
-// ===============================
+/* 
+ The Spirit of the Hive
+ Canvas Only Game
+ Mobile + PC Compatible
+*/
+
+// ======================
+// BASIC ENGINE SETUP
+// ======================
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-const hintEl = document.getElementById("hint");
-const inventoryEl = document.getElementById("inventory");
+resize();
+window.addEventListener("resize", resize);
 
 function resize() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 }
-window.addEventListener("resize", resize);
-resize();
 
-// ===============================
-// INPUT SYSTEM (Keyboard + Touch)
-// ===============================
-const input = {
-  left: false,
-  right: false,
-  up: false,
-  down: false,
-  q: false,
-  w: false,
-  e: false,
-  r: false,
-};
+const uiHint = document.getElementById("hint");
+const inventoryUI = document.getElementById("inventory");
 
-const keyMap = {
-  ArrowLeft: "left",
-  ArrowRight: "right",
-  ArrowUp: "up",
-  ArrowDown: "down",
-  q: "q",
-  w: "w",
-  e: "e",
-  r: "r",
-};
+const TAU = Math.PI * 2;
+let time = 0;
 
-window.addEventListener("keydown", (e) => {
-  const k = keyMap[e.key];
-  if (k) input[k] = true;
+// ======================
+// INPUT SYSTEM
+// ======================
+const keys = {};
+let touchPos = null;
+let touchActive = false;
+
+window.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+window.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
+
+canvas.addEventListener("touchstart", e => {
+  touchActive = true;
+  touchPos = getTouchPos(e);
 });
-window.addEventListener("keyup", (e) => {
-  const k = keyMap[e.key];
-  if (k) input[k] = false;
-});
-
-// Touch: 화면 좌측 이동 / 우측 액션
-let touchStart = null;
-canvas.addEventListener("touchstart", (e) => {
-  const t = e.touches[0];
-  touchStart = { x: t.clientX, y: t.clientY };
-});
-canvas.addEventListener("touchmove", (e) => {
-  if (!touchStart) return;
-  const t = e.touches[0];
-  const dx = t.clientX - touchStart.x;
-  const dy = t.clientY - touchStart.y;
-  input.left = dx < -20;
-  input.right = dx > 20;
-  input.up = dy < -20;
-  input.down = dy > 20;
+canvas.addEventListener("touchmove", e => {
+  touchPos = getTouchPos(e);
 });
 canvas.addEventListener("touchend", () => {
-  input.left = input.right = input.up = input.down = false;
-  input.q = true; // tap = interact
-  setTimeout(() => (input.q = false), 100);
+  touchActive = false;
+  touchPos = null;
 });
 
-// ===============================
+function getTouchPos(e) {
+  const t = e.touches[0];
+  return { x: t.clientX, y: t.clientY };
+}
+
+// ======================
+// AUDIO SYSTEM
+// ======================
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioCtx();
+
+function playTone(freq, dur = 0.2, type = "sine", vol = 0.1) {
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type;
+  o.frequency.value = freq;
+  g.gain.value = vol;
+  o.connect(g);
+  g.connect(audioCtx.destination);
+  o.start();
+  o.stop(audioCtx.currentTime + dur);
+}
+
+function noise(dur = 0.5, vol = 0.05) {
+  const bufferSize = audioCtx.sampleRate * dur;
+  const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+  const src = audioCtx.createBufferSource();
+  const g = audioCtx.createGain();
+  g.gain.value = vol;
+  src.buffer = buffer;
+  src.connect(g);
+  g.connect(audioCtx.destination);
+  src.start();
+}
+
+// ======================
 // GAME STATE
-// ===============================
-let currentScene = 0;
-let time = 0;
+// ======================
+let scene = 0;
 let inventory = [];
 let imagination = 0.4;
 let trust = 0.3;
 let stress = 0;
-let auditoryGauge = 0;
-let auditoryTarget = 1;
-let wellCompleted = false;
-let escapedHouse = false;
-let soldierHelped = false;
 
-// ===============================
+function addInventory(item) {
+  if (!inventory.includes(item)) inventory.push(item);
+}
+
+// ======================
 // UTILITIES
-// ===============================
-function clamp(v, min, max) {
-  return Math.max(min, Math.min(max, v));
-}
-function lerp(a, b, t) {
-  return a + (b - a) * t;
-}
+// ======================
+function lerp(a, b, t) { return a + (b - a) * t; }
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 
-// ===============================
-// PARTICLE SYSTEM
-// ===============================
-class Particle {
-  constructor(x, y, color) {
-    this.x = x;
-    this.y = y;
-    this.vx = (Math.random() - 0.5) * 0.4;
-    this.vy = -Math.random() * 0.4 - 0.2;
-    this.life = 1;
-    this.color = color;
-  }
-  update(dt) {
-    this.x += this.vx * dt;
-    this.y += this.vy * dt;
-    this.life -= 0.01 * dt;
-  }
-  draw() {
-    ctx.globalAlpha = this.life;
-    ctx.fillStyle = this.color;
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  }
+function drawText(txt, x, y, size = 14, col = "#fff", align = "center") {
+  ctx.fillStyle = col;
+  ctx.font = `${size}px sans-serif`;
+  ctx.textAlign = align;
+  ctx.fillText(txt, x, y);
 }
 
-let particles = [];
+// ======================
+// CHARACTER SYSTEM
+// ======================
 
-// ===============================
-// ANA CHARACTER
-// ===============================
 class Ana {
   constructor() {
     this.x = canvas.width / 2;
-    this.y = canvas.height * 0.7;
+    this.y = canvas.height * 0.65;
     this.vx = 0;
     this.vy = 0;
-    this.speed = 1.6;
+    this.dir = 1;
     this.eyePulse = 0;
-    this.skirtAngle = 0;
-    this.breathe = 0;
+    this.imaginationActive = false;
   }
 
-  update(dt) {
-    this.breathe += 0.03 * dt;
-    this.eyePulse = lerp(this.eyePulse, imagination, 0.05);
+  update() {
+    const speed = stress > 0.6 ? 1.2 : 2.2;
 
-    let dx = 0,
-      dy = 0;
-    if (input.left) dx--;
-    if (input.right) dx++;
-    if (input.up) dy--;
-    if (input.down) dy++;
+    let mx = 0, my = 0;
 
-    const mag = Math.hypot(dx, dy);
-    if (mag > 0) {
-      dx /= mag;
-      dy /= mag;
-      this.vx = dx * this.speed;
-      this.vy = dy * this.speed;
-      this.skirtAngle = lerp(this.skirtAngle, dx * 0.3, 0.1);
-    } else {
-      this.vx = lerp(this.vx, 0, 0.2);
-      this.vy = lerp(this.vy, 0, 0.2);
+    if (keys["arrowleft"] || keys["a"]) mx -= 1;
+    if (keys["arrowright"] || keys["d"]) mx += 1;
+    if (keys["arrowup"] || keys["w"]) my -= 1;
+    if (keys["arrowdown"] || keys["s"]) my += 1;
+
+    if (touchActive && touchPos) {
+      const dx = touchPos.x - this.x;
+      const dy = touchPos.y - this.y;
+      const l = Math.hypot(dx, dy);
+      if (l > 12) {
+        mx = dx / l;
+        my = dy / l;
+      }
     }
 
-    this.x += this.vx * dt;
-    this.y += this.vy * dt;
+    this.vx = lerp(this.vx, mx * speed, 0.25);
+    this.vy = lerp(this.vy, my * speed, 0.25);
 
-    this.x = clamp(this.x, 50, canvas.width - 50);
-    this.y = clamp(this.y, 100, canvas.height - 50);
+    this.x += this.vx;
+    this.y += this.vy;
 
-    // Imagination particles
-    if (imagination > 0.55) {
-      let col =
-        imagination > 0.75
-          ? "rgba(180,140,255,0.8)"
-          : trust > 0.5
-          ? "rgba(255,215,120,0.8)"
-          : "rgba(100,220,200,0.8)";
-      particles.push(new Particle(this.x, this.y - 20, col));
-    }
+    this.x = clamp(this.x, 40, canvas.width - 40);
+    this.y = clamp(this.y, 80, canvas.height - 40);
+
+    if (mx !== 0) this.dir = Math.sign(mx);
+
+    this.eyePulse += 0.05;
   }
 
   draw() {
     ctx.save();
     ctx.translate(this.x, this.y);
+    ctx.scale(this.dir, 1);
 
-    // Shadow
-    ctx.fillStyle = "rgba(0,0,0,0.4)";
+    // === BODY ===
+    ctx.fillStyle = "#4b4a68";
     ctx.beginPath();
-    ctx.ellipse(0, 20, 14, 6, 0, 0, Math.PI * 2);
+    ctx.roundRect(-12, 8, 24, 34, 6);
     ctx.fill();
 
-    // Legs
-    ctx.strokeStyle = "#d0c8c8";
-    ctx.lineWidth = 2;
+    // === CARDIGAN (oversized) ===
+    ctx.fillStyle = "#3b3a55";
     ctx.beginPath();
-    ctx.moveTo(-4, 8);
-    ctx.lineTo(-6, 20);
-    ctx.moveTo(4, 8);
-    ctx.lineTo(6, 20);
-    ctx.stroke();
-
-    // Skirt
-    ctx.save();
-    ctx.rotate(this.skirtAngle);
-    ctx.fillStyle = "#5a4a6a";
-    ctx.beginPath();
-    ctx.moveTo(-10, 8);
-    ctx.lineTo(10, 8);
-    ctx.lineTo(14, -6);
-    ctx.lineTo(-14, -6);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-
-    // Cardigan
-    ctx.fillStyle = "#7a7f9a";
-    ctx.beginPath();
-    ctx.roundRect(-12, -22, 24, 20, 6);
+    ctx.roundRect(-18, 6, 36, 28, 10);
     ctx.fill();
 
-    // Arms
-    ctx.strokeStyle = "#d0c8c8";
+    // === SKIRT (slightly twisted) ===
+    ctx.fillStyle = "#5c5a7c";
     ctx.beginPath();
-    ctx.moveTo(-10, -16);
-    ctx.lineTo(-18, -10);
-    ctx.moveTo(10, -16);
-    ctx.lineTo(18, -10);
-    ctx.stroke();
-
-    // Head
-    ctx.fillStyle = "#e2cfc2";
-    ctx.beginPath();
-    ctx.arc(0, -34, 10, 0, Math.PI * 2);
+    ctx.roundRect(-14, 34, 28, 14, 6);
     ctx.fill();
 
-    // Hair (asymmetric bob)
-    ctx.fillStyle = "#1a1a1f";
+    // === LEGS / SOCKS mismatch ===
+    ctx.fillStyle = "#d6cfcf";
+    ctx.fillRect(-8, 48, 6, 12);
+    ctx.fillRect(2, 48, 6, 16);
+
+    // === HEAD ===
+    ctx.fillStyle = "#f0d4c0";
     ctx.beginPath();
-    ctx.moveTo(-12, -38);
-    ctx.quadraticCurveTo(-10, -48, 0, -48);
-    ctx.quadraticCurveTo(10, -48, 12, -38);
-    ctx.lineTo(8, -26);
-    ctx.lineTo(-10, -26);
-    ctx.closePath();
+    ctx.arc(0, -10, 14, 0, TAU);
     ctx.fill();
 
-    // Hair covering one eye
+    // === HAIR (uneven bob) ===
+    ctx.fillStyle = "#111";
     ctx.beginPath();
-    ctx.moveTo(-10, -38);
-    ctx.lineTo(-2, -38);
-    ctx.lineTo(-4, -26);
-    ctx.closePath();
+    ctx.arc(-2, -14, 15, Math.PI * 0.1, Math.PI * 1.2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(6, -14, 12, Math.PI * 1.9, Math.PI * 0.3);
     ctx.fill();
 
-    // Eyes
-    const pupilSize = 2 + this.eyePulse * 3;
+    // === EYES ===
+    const pupilScale = lerp(3, 5, imagination);
+    const fearScale = lerp(1, 1.3, stress);
     ctx.fillStyle = "#000";
     ctx.beginPath();
-    ctx.arc(-3, -34, pupilSize, 0, Math.PI * 2);
-    ctx.arc(4, -34, pupilSize, 0, Math.PI * 2);
+    ctx.arc(-4, -12, pupilScale * fearScale, 0, TAU);
+    ctx.arc(4, -12, pupilScale * fearScale, 0, TAU);
     ctx.fill();
 
-    // Imagination shimmer in eyes
-    if (imagination > 0.7) {
-      ctx.fillStyle = "rgba(255,255,255,0.7)";
+    // === IMAGINATION STAR REFLECTION ===
+    if (this.imaginationActive) {
+      ctx.fillStyle = "#fff6c0";
       ctx.beginPath();
-      ctx.arc(-2, -35, 1, 0, Math.PI * 2);
-      ctx.arc(5, -35, 1, 0, Math.PI * 2);
+      ctx.arc(-3, -13, 1.5, 0, TAU);
+      ctx.arc(5, -13, 1.5, 0, TAU);
       ctx.fill();
     }
 
     ctx.restore();
+
+    // === IMAGINATION PARTICLES ===
+    if (this.imaginationActive) {
+      const colors = {
+        curiosity: "#ffd966",
+        fear: "#66ffe0",
+        sadness: "#a98cff"
+      };
+      let c = colors.curiosity;
+      if (stress > 0.6) c = colors.fear;
+      if (scene === 2) c = colors.sadness;
+
+      for (let i = 0; i < 6; i++) {
+        const a = time * 0.05 + i;
+        const r = 18 + Math.sin(time * 0.1 + i) * 6;
+        ctx.fillStyle = c;
+        ctx.globalAlpha = 0.5;
+        ctx.beginPath();
+        ctx.arc(this.x + Math.cos(a) * r, this.y - 10 + Math.sin(a) * r, 2, 0, TAU);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
   }
 }
 
-const ana = new Ana();
-
-// ===============================
+// ======================
 // FATHER CHARACTER
-// ===============================
+// ======================
 class Father {
   constructor() {
-    this.x = canvas.width * 0.6;
+    this.x = canvas.width * 0.65;
     this.y = canvas.height * 0.6;
     this.lookTimer = 0;
     this.looking = false;
-    this.honeyDrops = [];
   }
 
   update(dt) {
     this.lookTimer += dt;
-    if (this.lookTimer > 600) {
+    if (this.lookTimer > 10) {
       this.lookTimer = 0;
-      this.looking = !this.looking;
+      this.looking = true;
+      setTimeout(() => this.looking = false, 1800);
     }
-
-    if (Math.random() < 0.01) {
-      this.honeyDrops.push({
-        x: this.x + (Math.random() - 0.5) * 30,
-        y: this.y + 30,
-        life: 1,
-      });
-    }
-
-    this.honeyDrops.forEach((d) => (d.life -= 0.01 * dt));
-    this.honeyDrops = this.honeyDrops.filter((d) => d.life > 0);
   }
 
   draw() {
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // Shadow
-    ctx.fillStyle = "rgba(0,0,0,0.4)";
+    // === BODY ===
+    ctx.fillStyle = "#2c2c38";
     ctx.beginPath();
-    ctx.ellipse(0, 28, 18, 8, 0, 0, Math.PI * 2);
+    ctx.roundRect(-14, 10, 28, 40, 8);
     ctx.fill();
 
-    // Body
-    ctx.fillStyle = "#3a3a55";
+    // === HEAD ===
+    ctx.fillStyle = "#d8c2a8";
     ctx.beginPath();
-    ctx.roundRect(-14, -20, 28, 40, 6);
+    ctx.arc(0, -6, 14, 0, TAU);
     ctx.fill();
 
-    // Head
-    ctx.fillStyle = "#c9b8a8";
-    ctx.beginPath();
-    ctx.arc(0, -34, 12, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Glasses reflection
+    // === GLASSES REFLECTION ===
     ctx.fillStyle = "rgba(180,200,255,0.6)";
+    ctx.fillRect(-9, -12, 7, 6);
+    ctx.fillRect(2, -12, 7, 6);
+
+    // === RIGHT HAND (bandaged, swollen) ===
+    ctx.fillStyle = "#ccc";
     ctx.beginPath();
-    ctx.rect(-10, -38, 8, 6);
-    ctx.rect(2, -38, 8, 6);
+    ctx.roundRect(12, 22, 8, 14, 3);
+    ctx.fill();
+    ctx.fillStyle = "rgba(160,40,40,0.6)";
+    ctx.beginPath();
+    ctx.arc(16, 30, 4, 0, TAU);
     ctx.fill();
 
-    // Arms
-    ctx.strokeStyle = "#c9b8a8";
-    ctx.lineWidth = 2;
-
-    // Left hand holding newspaper
-    ctx.beginPath();
-    ctx.moveTo(-14, -10);
-    ctx.lineTo(-24, 0);
-    ctx.stroke();
-    ctx.fillStyle = "#555";
-    ctx.fillRect(-34, -2, 10, 12);
-
-    // Right hand (bandaged)
-    ctx.beginPath();
-    ctx.moveTo(14, -10);
-    ctx.lineTo(22, 0);
-    ctx.stroke();
-    ctx.fillStyle = "#ddd";
-    ctx.fillRect(18, -4, 10, 10);
-
-    // Bandage stain
-    ctx.fillStyle = "rgba(180,60,60,0.5)";
-    ctx.beginPath();
-    ctx.arc(22, 0, 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
-
-    // Honey drops
-    this.honeyDrops.forEach((d) => {
-      ctx.globalAlpha = d.life;
-      ctx.fillStyle = "rgba(255,200,50,0.6)";
-      ctx.beginPath();
-      ctx.arc(d.x, d.y, 3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    });
-  }
-}
-
-const father = new Father();
-
-// ===============================
-// MOTHER CHARACTER (Simplified)
-// ===============================
-class Mother {
-  constructor() {
-    this.x = canvas.width * 0.4;
-    this.y = canvas.height * 0.6;
-  }
-  draw() {
+    // === LEFT HAND (holding object, trembling) ===
     ctx.save();
-    ctx.translate(this.x, this.y);
-    ctx.fillStyle = "#6a5a7a";
+    ctx.translate(-18, 26);
+    ctx.rotate(Math.sin(time * 0.2) * 0.1);
+    ctx.fillStyle = "#d0b090";
     ctx.beginPath();
-    ctx.roundRect(-12, -18, 24, 36, 6);
-    ctx.fill();
-    ctx.fillStyle = "#d8c6b8";
-    ctx.beginPath();
-    ctx.arc(0, -30, 10, 0, Math.PI * 2);
+    ctx.roundRect(-4, -4, 8, 10, 3);
     ctx.fill();
     ctx.restore();
+
+    ctx.restore();
+
+    // === SPACE COLOR TEMPERATURE EFFECT ===
+    if (this.looking) {
+      ctx.fillStyle = "rgba(100,120,255,0.08)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // === HONEY DROPLETS TRAIL ===
+    for (let i = 0; i < 3; i++) {
+      const dx = Math.sin(time * 0.1 + i) * 12;
+      ctx.fillStyle = "rgba(255,200,80,0.6)";
+      ctx.beginPath();
+      ctx.arc(this.x + dx, this.y + 50 + i * 10, 3, 0, TAU);
+      ctx.fill();
+    }
   }
 }
 
-const mother = new Mother();
-
-// ===============================
-// SOLDIER / SPIRIT
-// ===============================
-class Soldier {
+// ======================
+// SPIRIT / SOLDIER
+// ======================
+class Spirit {
   constructor() {
     this.x = canvas.width * 0.5;
-    this.y = canvas.height * 0.55;
-    this.state = "fear";
-    this.shadowPulse = 0;
+    this.y = canvas.height * 0.5;
+    this.fearReaction = 0;
   }
 
-  update(dt) {
-    if (trust > 0.6 && imagination > 0.6) this.state = "spirit";
-    else this.state = "wounded";
-
-    this.shadowPulse += 0.02 * dt;
+  update() {
+    const d = dist(player, this);
+    this.fearReaction = clamp(1 - d / 120, 0, 1);
   }
 
   draw() {
     ctx.save();
     ctx.translate(this.x, this.y);
 
-    // Shadow (fear distortion)
-    const shadowScale = this.state === "wounded" ? 1 + Math.sin(this.shadowPulse) * 0.2 : 1;
-    ctx.save();
-    ctx.scale(shadowScale, 1);
-    ctx.fillStyle = "rgba(0,0,0,0.5)";
-    ctx.beginPath();
-    ctx.ellipse(0, 30, 20, 10, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+    const morph = clamp(imagination + trust, 0, 1);
 
-    // Halo if spirit
-    if (this.state === "spirit") {
-      ctx.strokeStyle = "rgba(255,230,150,0.6)";
-      ctx.lineWidth = 3;
+    // === SHADOW (distorted when fear) ===
+    ctx.fillStyle = "rgba(0,0,0,0.4)";
+    ctx.beginPath();
+    ctx.ellipse(0, 36, 20 + this.fearReaction * 30, 8, 0, 0, TAU);
+    ctx.fill();
+
+    // === BODY ===
+    ctx.fillStyle = "#3a3a3a";
+    ctx.beginPath();
+    ctx.roundRect(-12, 8, 24, 40, 6);
+    ctx.fill();
+
+    // === HEAD ===
+    ctx.fillStyle = "#777";
+    ctx.beginPath();
+    ctx.arc(0, -6, 14 + morph * 2, 0, TAU);
+    ctx.fill();
+
+    // === FRANKENSTEIN BOLTS (high imagination/trust) ===
+    if (morph > 0.7) {
+      ctx.fillStyle = "#aaa";
+      ctx.fillRect(-18, -6, 6, 4);
+      ctx.fillRect(12, -6, 6, 4);
+    }
+
+    // === GOLDEN WOUND CRACKS ===
+    if (morph > 0.6) {
+      ctx.strokeStyle = "#ffd966";
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(0, -30, 26, 0, Math.PI * 2);
+      ctx.moveTo(-4, 10);
+      ctx.lineTo(0, 24);
+      ctx.lineTo(6, 14);
       ctx.stroke();
     }
 
-    // Body
-    ctx.fillStyle = this.state === "spirit" ? "#aaa" : "#555";
+    // === EYES ===
+    ctx.fillStyle = "#000";
     ctx.beginPath();
-    ctx.roundRect(-14, -20, 28, 40, 6);
+    ctx.arc(-4, -8, 2, 0, TAU);
+    ctx.arc(4, -8, 2, 0, TAU);
     ctx.fill();
 
-    // Cracks / wounds
-    if (this.state === "spirit") {
-      ctx.strokeStyle = "rgba(255,200,100,0.8)";
+    // === HALO (curiosity) ===
+    if (imagination > 0.6 && stress < 0.4) {
+      ctx.strokeStyle = "rgba(200,220,255,0.5)";
       ctx.beginPath();
-      ctx.moveTo(-6, -10);
-      ctx.lineTo(-2, 10);
-      ctx.moveTo(4, -12);
-      ctx.lineTo(6, 8);
+      ctx.arc(0, -10, 22, 0, TAU);
+      ctx.stroke();
+    }
+
+    // === HAND GESTURES ===
+    if (inventory.includes("bread") && inventory.includes("water")) {
+      ctx.strokeStyle = "#fff";
+      ctx.beginPath();
+      ctx.moveTo(12, 20);
+      ctx.lineTo(24, 12);
       ctx.stroke();
     } else {
-      ctx.fillStyle = "rgba(120,0,0,0.6)";
+      ctx.strokeStyle = "#aaa";
       ctx.beginPath();
-      ctx.arc(-4, 0, 3, 0, Math.PI * 2);
-      ctx.arc(5, 5, 2, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(-12, 20);
+      ctx.lineTo(-20, 28);
+      ctx.stroke();
     }
-
-    // Head
-    ctx.fillStyle = "#c9b8a8";
-    ctx.beginPath();
-    ctx.arc(0, -34, 12, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Frankenstein bolts if spirit
-    if (this.state === "spirit") {
-      ctx.fillStyle = "#666";
-      ctx.fillRect(-16, -36, 4, 4);
-      ctx.fillRect(12, -36, 4, 4);
-    }
-
-    // Eyes
-    ctx.fillStyle = "#000";
-    ctx.beginPath();
-    ctx.arc(-4, -34, 2, 0, Math.PI * 2);
-    ctx.arc(4, -34, 2, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Hands (gestures)
-    ctx.strokeStyle = "#c9b8a8";
-    ctx.beginPath();
-    ctx.moveTo(-14, -6);
-    ctx.lineTo(-22, 4);
-    ctx.moveTo(14, -6);
-    ctx.lineTo(22, 4);
-    ctx.stroke();
 
     ctx.restore();
   }
 }
 
-const soldier = new Soldier();
+// ======================
+// ENTITIES
+// ======================
+const player = new Ana();
+const father = new Father();
+const spirit = new Spirit();
 
-// ===============================
-// UI
-// ===============================
-function updateInventoryUI() {
-  inventoryEl.innerHTML = inventory.map((i) => `[${i}]`).join(" ");
-}
+// ======================
+// SCENE SYSTEM
+// ======================
+let hearingGauge = 0;
+let discoveredWell = false;
 
-// ===============================
-// SCENE 1: WELL - AUDITORY FOCUS
-// ===============================
-function sceneWell(dt) {
-  hintEl.textContent = wellCompleted
-    ? "…우물 아래에서 낯선 존재의 존재감이 느껴진다."
-    : "Q: 우물을 살펴보기 — 숨소리에 집중하라";
+let breadPos = { x: canvas.width * 0.45, y: canvas.height * 0.62 };
+let waterPos = { x: canvas.width * 0.55, y: canvas.height * 0.62 };
+let exitDoor = { x: canvas.width * 0.9, y: canvas.height * 0.6 };
 
+let soldierFed = false;
+let photoFound = false;
+
+// ======================
+// DRAW HELPERS
+// ======================
+function drawWellScene() {
   // Background
-  const grd = ctx.createRadialGradient(
-    canvas.width / 2,
-    canvas.height / 2,
-    50,
-    canvas.width / 2,
-    canvas.height / 2,
-    canvas.width / 1.2
-  );
-  grd.addColorStop(0, "#1a1f2a");
-  grd.addColorStop(1, "#04050a");
-  ctx.fillStyle = grd;
+  const g = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  g.addColorStop(0, "#101020");
+  g.addColorStop(1, "#020208");
+  ctx.fillStyle = g;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Ground
+  ctx.fillStyle = "#1c1c2a";
+  ctx.fillRect(0, canvas.height * 0.65, canvas.width, canvas.height * 0.35);
 
   // Well
-  ctx.fillStyle = "#222";
+  ctx.fillStyle = "#3a3a48";
   ctx.beginPath();
-  ctx.ellipse(canvas.width / 2, canvas.height * 0.65, 80, 30, 0, 0, Math.PI * 2);
+  ctx.ellipse(canvas.width * 0.5, canvas.height * 0.6, 80, 30, 0, 0, TAU);
   ctx.fill();
-  ctx.strokeStyle = "#555";
-  ctx.lineWidth = 3;
-  ctx.stroke();
 
-  // Rope
-  ctx.strokeStyle = "#666";
+  ctx.fillStyle = "#0a0a14";
   ctx.beginPath();
-  ctx.moveTo(canvas.width / 2, canvas.height * 0.65);
-  ctx.lineTo(canvas.width / 2, canvas.height * 0.3);
-  ctx.stroke();
+  ctx.ellipse(canvas.width * 0.5, canvas.height * 0.6, 50, 16, 0, 0, TAU);
+  ctx.fill();
 
-  // Ambient noise visualization
-  for (let i = 0; i < 20; i++) {
-    ctx.fillStyle = `rgba(100,100,140,${Math.random() * 0.1})`;
-    ctx.beginPath();
-    ctx.arc(
-      Math.random() * canvas.width,
-      Math.random() * canvas.height,
-      Math.random() * 3,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
-  }
-
-  // Ana
-  ana.update(dt);
-  ana.draw();
-
-  // Interaction
-  const dist = Math.hypot(ana.x - canvas.width / 2, ana.y - canvas.height * 0.65);
-  if (dist < 100 && input.q && !wellCompleted) {
-    auditoryGauge += 0.01 * dt;
-  } else {
-    auditoryGauge -= 0.005 * dt;
-  }
-  auditoryGauge = clamp(auditoryGauge, 0, 1);
-
-  // UI Gauge
-  ctx.fillStyle = "rgba(255,255,255,0.2)";
-  ctx.fillRect(canvas.width / 2 - 100, 40, 200, 10);
-  ctx.fillStyle = "rgba(180,220,255,0.8)";
-  ctx.fillRect(canvas.width / 2 - 100, 40, 200 * auditoryGauge, 10);
-
-  ctx.fillStyle = "#ccc";
-  ctx.font = "12px sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText("청각 집중", canvas.width / 2, 30);
-
-  if (auditoryGauge >= 1 && !wellCompleted) {
-    wellCompleted = true;
-    imagination += 0.2;
-    hintEl.textContent = "지도에 물음표가 새겨졌다…";
-    setTimeout(() => {
-      currentScene = 1;
-    }, 1500);
+  // Breathing echo rings
+  if (!discoveredWell) {
+    for (let i = 0; i < 3; i++) {
+      const r = 50 + Math.sin(time * 0.05 + i) * 6;
+      ctx.strokeStyle = `rgba(180,200,255,${0.2 - i * 0.05})`;
+      ctx.beginPath();
+      ctx.ellipse(canvas.width * 0.5, canvas.height * 0.6, r, r * 0.4, 0, 0, TAU);
+      ctx.stroke();
+    }
   }
 }
 
-// ===============================
-// SCENE 2: HOUSE STEALTH
-// ===============================
-let fatherTimer = 0;
-let fatherLooking = false;
-
-function sceneHouse(dt) {
-  hintEl.textContent = escapedHouse
-    ? "…집을 빠져나왔다."
-    : "부모의 시선을 피해 빵과 물을 챙기고 탈출하라 (Q: 집기)";
-
-  // Background
-  ctx.fillStyle = "#2a2433";
+function drawHouseScene() {
+  ctx.fillStyle = "#1a1624";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Kitchen tiles
-  for (let y = 0; y < canvas.height; y += 40) {
-    for (let x = 0; x < canvas.width; x += 40) {
-      ctx.strokeStyle = "rgba(255,255,255,0.05)";
-      ctx.strokeRect(x, y, 40, 40);
+  // Kitchen floor
+  ctx.fillStyle = "#242030";
+  ctx.fillRect(0, canvas.height * 0.6, canvas.width, canvas.height * 0.4);
+
+  // Table
+  ctx.fillStyle = "#3a2a1a";
+  ctx.fillRect(canvas.width * 0.4, canvas.height * 0.55, 160, 12);
+
+  // Bread
+  if (!inventory.includes("bread")) {
+    ctx.fillStyle = "#d2a36a";
+    ctx.beginPath();
+    ctx.ellipse(breadPos.x, breadPos.y, 10, 6, 0, 0, TAU);
+    ctx.fill();
+  }
+
+  // Water bottle
+  if (!inventory.includes("water")) {
+    ctx.fillStyle = "#7fcfff";
+    ctx.beginPath();
+    ctx.roundRect(waterPos.x - 6, waterPos.y - 10, 12, 20, 4);
+    ctx.fill();
+  }
+
+  // Door
+  ctx.fillStyle = "#402a20";
+  ctx.fillRect(exitDoor.x - 20, exitDoor.y - 40, 40, 80);
+}
+
+function drawHideoutScene() {
+  ctx.fillStyle = "#07070c";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Light shafts
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = `rgba(200,200,255,0.05)`;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width * (0.2 + i * 0.25), 0);
+    ctx.lineTo(canvas.width * (0.25 + i * 0.25), canvas.height);
+    ctx.lineTo(canvas.width * (0.3 + i * 0.25), canvas.height);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+// ======================
+// GAMEPLAY LOGIC
+// ======================
+function updateWellScene(dt) {
+  drawWellScene();
+  player.update();
+  player.draw();
+
+  const wellPos = { x: canvas.width * 0.5, y: canvas.height * 0.6 };
+  const d = dist(player, wellPos);
+
+  if (d < 90 && !discoveredWell) {
+    uiHint.innerText = "우물을 살펴보기 (F)";
+    if (keys["f"]) {
+      hearingGauge += dt * 0.4;
+      imagination = clamp(imagination + dt * 0.1, 0, 1);
+      stress = clamp(stress + dt * 0.05, 0, 1);
+
+      // Breathing sound
+      if (Math.random() < 0.05) playTone(120, 0.15, "sine", 0.04);
+
+      // Ambient distractions
+      if (Math.random() < 0.02) noise(0.1, 0.03);
+
+      drawHearingGauge();
+
+      if (hearingGauge > 1) {
+        discoveredWell = true;
+        uiHint.innerText = "지도에 물음표가 기록되었다.";
+        setTimeout(() => {
+          scene = 1;
+          uiHint.innerText = "";
+        }, 1500);
+      }
     }
+  } else {
+    uiHint.innerText = "";
   }
+}
 
-  // Father pattern
-  fatherTimer += dt;
-  if (fatherTimer > 600) {
-    fatherTimer = 0;
-    fatherLooking = !fatherLooking;
-  }
+function drawHearingGauge() {
+  const w = canvas.width * 0.4;
+  const h = 10;
+  const x = canvas.width * 0.3;
+  const y = 30;
 
-  // Color temperature drop when father looks
-  if (fatherLooking) {
-    ctx.fillStyle = "rgba(50,70,120,0.25)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  }
+  ctx.fillStyle = "#222";
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = "#8fdcff";
+  ctx.fillRect(x, y, w * hearingGauge, h);
+  ctx.strokeStyle = "#fff";
+  ctx.strokeRect(x, y, w, h);
+}
 
+function updateHouseScene(dt) {
+  drawHouseScene();
   father.update(dt);
   father.draw();
-  mother.draw();
+  player.update();
+  player.draw();
 
-  // Items
-  const bread = { x: canvas.width * 0.3, y: canvas.height * 0.7 };
-  const water = { x: canvas.width * 0.7, y: canvas.height * 0.7 };
+  stress = lerp(stress, father.looking ? 0.9 : 0.2, 0.05);
 
-  function drawItem(item, label) {
-    ctx.fillStyle = "#caa46a";
-    ctx.beginPath();
-    ctx.roundRect(item.x - 10, item.y - 6, 20, 12, 4);
-    ctx.fill();
-    ctx.fillStyle = "#000";
-    ctx.font = "10px sans-serif";
-    ctx.fillText(label, item.x, item.y - 10);
-  }
-
-  if (!inventory.includes("bread")) drawItem(bread, "빵");
-  if (!inventory.includes("water")) drawItem(water, "물");
-
-  ana.update(dt);
-  ana.draw();
-
-  // Stress if father looks and Ana in sight
-  if (fatherLooking && Math.abs(ana.x - father.x) < 120) {
-    stress = clamp(stress + 0.01 * dt, 0, 1);
-  } else {
-    stress = clamp(stress - 0.02 * dt, 0, 1);
-  }
-
-  if (stress > 0.6) {
-    ctx.strokeStyle = "rgba(100,150,255,0.4)";
-    ctx.lineWidth = 12;
-    ctx.strokeRect(0, 0, canvas.width, canvas.height);
-    ana.speed = 1.1;
-  } else {
-    ana.speed = 1.6;
-  }
-
-  // Interaction pickup
-  function tryPickup(item, name) {
-    const d = Math.hypot(ana.x - item.x, ana.y - item.y);
-    if (d < 40 && input.q && !inventory.includes(name)) {
-      inventory.push(name);
-      updateInventoryUI();
+  // Bread pickup
+  if (!inventory.includes("bread") && dist(player, breadPos) < 24) {
+    uiHint.innerText = "빵 줍기 (F)";
+    if (keys["f"]) {
+      addInventory("bread");
+      playTone(400, 0.1);
     }
   }
 
-  tryPickup(bread, "bread");
-  tryPickup(water, "water");
-
-  // Exit door
-  const door = { x: canvas.width / 2, y: 80 };
-  ctx.fillStyle = "#444";
-  ctx.fillRect(door.x - 20, door.y - 40, 40, 80);
-  ctx.fillStyle = "#888";
-  ctx.fillRect(door.x + 10, door.y, 4, 4);
-
-  const exitDist = Math.hypot(ana.x - door.x, ana.y - door.y);
-  if (exitDist < 50 && inventory.includes("bread") && inventory.includes("water")) {
-    if (input.q) {
-      escapedHouse = true;
-      setTimeout(() => {
-        currentScene = 2;
-      }, 1000);
+  // Water pickup
+  if (!inventory.includes("water") && dist(player, waterPos) < 24) {
+    uiHint.innerText = "물병 줍기 (F)";
+    if (keys["f"]) {
+      addInventory("water");
+      playTone(500, 0.1);
     }
+  }
+
+  // Door escape
+  if (inventory.includes("bread") && inventory.includes("water")) {
+    if (dist(player, exitDoor) < 40) {
+      uiHint.innerText = "몰래 나가기 (F)";
+      if (keys["f"] && !father.looking) {
+        playTone(200, 0.3);
+        scene = 2;
+        uiHint.innerText = "";
+      }
+    }
+  }
+
+  // Detection
+  if (father.looking && dist(player, father) < 140) {
+    stress = 1;
+    ctx.fillStyle = "rgba(255,0,0,0.2)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    uiHint.innerText = "들켰다… 숨으세요.";
   }
 }
 
-// ===============================
-// SCENE 3: SOLDIER / SPIRIT INTERACTION
-// ===============================
-let droppedItems = [];
+function updateHideoutScene(dt) {
+  drawHideoutScene();
+  spirit.update();
+  spirit.draw();
+  player.update();
+  player.draw();
 
-function sceneHideout(dt) {
-  hintEl.textContent = soldierHelped
-    ? "…그는 조용히 숨을 고른다."
-    : "E: 아이템 내려놓기 / W: 관찰 / R: 뒤로 물러서기";
+  const d = dist(player, spirit);
 
-  // Background
-  ctx.fillStyle = "#0a0a12";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (!soldierFed) {
+    if (d < 90) {
+      uiHint.innerText = "빵과 물을 내려놓기 (F)";
+      if (keys["f"] && inventory.includes("bread") && inventory.includes("water")) {
+        inventory = [];
+        soldierFed = true;
+        trust = 0.7;
+        imagination = 0.8;
+        playTone(180, 0.5);
+      }
+    }
+  } else if (!photoFound) {
+    if (d > 80 && d < 140) {
+      uiHint.innerText = "관찰하기 (F)";
+      if (keys["f"]) {
+        photoFound = true;
+        playTone(600, 0.4);
+      }
+    }
+  }
 
-  // Dust light rays
-  for (let i = 0; i < 5; i++) {
-    const x = canvas.width * 0.2 + i * canvas.width * 0.15;
-    ctx.strokeStyle = "rgba(200,200,255,0.05)";
+  // Fear reaction
+  if (d < 50) {
+    spirit.fearReaction = 1;
+    stress = 1;
+    ctx.fillStyle = "rgba(255,0,0,0.15)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  } else {
+    stress = lerp(stress, 0.2, 0.05);
+  }
+
+  if (photoFound) {
+    uiHint.innerText = "군복 주머니에서 낡은 가족 사진을 발견했다.";
+  }
+}
+
+// ======================
+// INVENTORY UI
+// ======================
+function drawInventory() {
+  inventoryUI.innerText = inventory.length
+    ? "소지품: " + inventory.join(", ")
+    : "";
+}
+
+// ======================
+// MAIN LOOP
+// ======================
+let last = 0;
+function loop(t) {
+  const dt = (t - last) / 1000;
+  last = t;
+  time++;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Stress screen border hex effect
+  if (stress > 0.6) {
+    ctx.strokeStyle = "rgba(120,140,255,0.6)";
+    ctx.lineWidth = 6;
     ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x + 50, canvas.height);
+    const pad = 10;
+    ctx.moveTo(pad, pad + 20);
+    ctx.lineTo(pad + 20, pad);
+    ctx.lineTo(canvas.width - pad - 20, pad);
+    ctx.lineTo(canvas.width - pad, pad + 20);
+    ctx.lineTo(canvas.width - pad, canvas.height - pad - 20);
+    ctx.lineTo(canvas.width - pad - 20, canvas.height - pad);
+    ctx.lineTo(pad + 20, canvas.height - pad);
+    ctx.lineTo(pad, canvas.height - pad - 20);
+    ctx.closePath();
     ctx.stroke();
   }
 
-  ana.update(dt);
-  ana.draw();
+  // Scene switch
+  if (scene === 0) updateWellScene(dt);
+  if (scene === 1) updateHouseScene(dt);
+  if (scene === 2) updateHideoutScene(dt);
 
-  soldier.update(dt);
-  soldier.draw();
+  drawInventory();
 
-  // Dropped items
-  droppedItems.forEach((it) => {
-    ctx.fillStyle = it === "bread" ? "#caa46a" : "#6aaacb";
-    ctx.beginPath();
-    ctx.arc(canvas.width / 2, canvas.height * 0.65, 6, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  const dist = Math.hypot(ana.x - soldier.x, ana.y - soldier.y);
-
-  // Fear reaction if too close
-  if (dist < 80 && !soldierHelped) {
-    imagination = clamp(imagination - 0.002 * dt, 0, 1);
-    trust = clamp(trust - 0.002 * dt, 0, 1);
-    ctx.fillStyle = "rgba(0,0,0,0.25)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  }
-
-  // Drop item
-  if (input.e && inventory.length > 0 && dist > 90) {
-    const item = inventory.shift();
-    droppedItems.push(item);
-    updateInventoryUI();
-    trust += 0.2;
-  }
-
-  // Observe
-  if (input.w && dist > 90) {
-    imagination += 0.1;
-    trust += 0.05;
-
-    ctx.fillStyle = "rgba(255,255,255,0.8)";
-    ctx.font = "14px serif";
-    ctx.textAlign = "center";
-    ctx.fillText("그의 군복 주머니에서 낡은 가족 사진이 보인다…", canvas.width / 2, canvas.height * 0.3);
-
-    soldierHelped = true;
-  }
-
-  // Step back
-  if (input.r) {
-    ana.y += 1.5 * dt;
-  }
-
-  imagination = clamp(imagination, 0, 1);
-  trust = clamp(trust, 0, 1);
+  requestAnimationFrame(loop);
 }
-
-// ===============================
-// MAIN LOOP
-// ===============================
-function update(dt) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  if (currentScene === 0) sceneWell(dt);
-  if (currentScene === 1) sceneHouse(dt);
-  if (currentScene === 2) sceneHideout(dt);
-
-  // Draw particles
-  particles.forEach((p) => {
-    p.update(dt);
-    p.draw();
-  });
-  particles = particles.filter((p) => p.life > 0);
-
-  time += dt;
-  requestAnimationFrame((t) => update(1));
-}
-
-// ===============================
-// START
-// ===============================
-updateInventoryUI();
-update(1);
+requestAnimationFrame(loop);
