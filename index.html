@@ -1,48 +1,18 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>우물의 비밀</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <title>The Spirit of the Beehive - Ana's Perception</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div class="container">
-        <canvas id="gameCanvas"></canvas>
-        <div id="ui">
-            <div class="hint">F 키로 상호작용</div>
-            <div class="audio-meter">
-                <div class="audio-label">집중 게이지:</div>
-                <div class="meter-bar">
-                    <div class="meter-fill"></div>
-                </div>
-                <div class="meter-text">0%</div>
-            </div>
-            <div class="inventory">
-                <div class="item" id="bread">빵 조각</div>
-                <div class="item" id="water">물병</div>
-            </div>
-            <div class="trust-meter">
-                <div class="trust-label">신뢰도:</div>
-                <div class="meter-bar">
-                    <div class="trust-fill"></div>
-                </div>
-                <div class="meter-text">0%</div>
-            </div>
-            <div class="imagination-meter">
-                <div class="imagination-label">상상력:</div>
-                <div class="meter-bar">
-                    <div class="imagination-fill"></div>
-                </div>
-                <div class="meter-text">0%</div>
-            </div>
-        </div>
-        <div id="dialog">
-            <div class="dialog-text"></div>
-            <div class="dialog-next">계속하기 (스페이스바)</div>
-        </div>
-    </div>
-    <script src="main.js"></script>
+  <canvas id="game"></canvas>
+
+  <div id="ui">
+    <div id="hint"></div>
+    <div id="inventory"></div>
+  </div>
+
+  <script src="main.js"></script>
 </body>
 </html>
